@@ -1,0 +1,18 @@
+<tskel:before>
+let b:tskelArticleID = input("ID of bibentry: ")
+if b:tskelArticleID == "" | let b:tskelArticleID = "<+CURSOR+>" | endif
+</tskel:before>
+<tskel:after>
+unlet b:tskelArticleID
+</tskel:after>
+@ARTICLE{<+b:tskelArticleID+>,
+    author   = {<+ARTICLE AUTHORS+>},
+    title    = {<+ARTICLE TITLE+>},
+    journal  = {<+JOURNAL+>},
+    year     = {<+YEAR+>},
+    volume   = {<+VOL+>},
+    number   = {<+NUM+>},
+    abstract = {[[~/Projekte/Sci/Exzerpte/<+b:tskelArticleID+>.txt]]},
+    keywords = {<+KEYWORDS+>},
+}
+<++>
