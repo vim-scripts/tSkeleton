@@ -1,8 +1,10 @@
-@{FILE NAME}@{NOTE}
-@Author:      @{AUTHOR} (@{EMAIL})
-@Website:     @{WEBSITE}
-@License:     @{LICENSE}
-@Created:     @{DATE}.
-@Last Change: 23-Dez-2004.
+<tskel:after>
+if exists("*TComment")|call TCommentAs(1, line("$"), filetype)|endif
+</tskel:after>
+<+FILE NAME+><+NOTE+>
+@Author:      <+AUTHOR+> (<+EMAIL+>)
+@Website:     <+WEBSITE+>
+@License:     <+LICENSE+>
+@Created:     <+DATE+>.
+@Last Change: 01-Mär-2005.
 @Revision:    0.0
-

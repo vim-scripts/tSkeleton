@@ -1,0 +1,17 @@
+<tskel:before>
+let b:tskelArticleID = input("ID of bibentry: ")
+if b:tskelArticleID == "" | let b:tskelArticleID = "<+CURSOR+>" | endif
+</tskel:before>
+<tskel:after>
+unlet b:tskelArticleID
+</tskel:after>
+@BOOK{<+b:tskelArticleID+>,
+    editor     = {<+CURSOR+>},
+    booktitle  = {<+TITLE+>},
+    publisher  = {<+PUBLISHER+>},
+    year       = {<+YEAR+>},
+    keywords   = {<+KEYWORDS+>},
+    url        = {http://<+URL+>},
+    language   = {<+LANGUAGE+>},
+}
+<++>
