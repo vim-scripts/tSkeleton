@@ -2,6 +2,7 @@
 
 Author: Thomas Link, samul AT web.de
 
+-----------------------------------------------------------------------
                                                     *tSkeleton-install*
 Install~
 
@@ -10,7 +11,20 @@ vimfiles directory (see also |add-global-plugin|) so that you get: >
 
     (Linux etc.) $HOME/.vim/
     (Windows) $VIM/vimfiles/
-        doc/  etc/ plugin/  skeletons/ skeletons/bits/...
+        doc/ etc/ plugin/ skeletons/ skeletons/bits/...
+        skeletons/prefab/ skeletons/bits.samples/...
+
+The files in the "prefab" and "bits.samples" subdirectories are part of 
+the distribution. Copy them to there proper places and adjust them to 
+your needs:
+
+    skeletons/
+        FILE TEMPLATES ...
+        bits/
+            general/
+                GENERAL CODE SKELETONS ...
+            &filetype/
+                FILETYPE SPECIFIC CODE SKELETONS ...
 
 When updating from an older version, you might want to backup your 
 skeletons beforehand. If you re-use skeletons from version 1.0 with a 
@@ -35,12 +49,13 @@ Alternatively, you can feed the file etc/tSkeleton.lst to rm: >
     rm -i `cat etc/tSkeleton.lst`
 
 
+-----------------------------------------------------------------------
                                                     *tSkeleton-usage*
 File templates~
 
-The file skeletons are stored in the skeletons subdirectory. Filling in a skeleton 
-when creating a new file is controlled by |:autocmd|. This provides 
-greater flexibility than a &filetype based approach.
+The file skeletons are stored in the skeletons subdirectory. Filling in 
+a skeleton when creating a new file is controlled by |:autocmd|. This 
+provides greater flexibility than a &filetype based approach.
 
 Currently, the following file types are supported by default:
 
@@ -55,7 +70,8 @@ Currently, the following file types are supported by default:
    - text.txt
 
 In order to add a new mode, save a skeleton file to 
-~/.vim/skeletons/file.suffix and add something like this to your .vimrc file: >
+~/.vim/skeletons/file.suffix and add something like this to your .vimrc 
+file: >
 
     autocmd BufNewFile *.suffix       TSkeletonSetup template.suffix
     autocmd BufNewFile /here/*.suffix TSkeletonSetup othertemplate.suffix
@@ -85,16 +101,22 @@ tSkeleton also supports the following pseudo-tags:
     <+&NAME+>          :: a vim option
     <+g:NAME+>         :: a global variable
     <+b:NAME+>         :: a buffer local variable
-    <+?QUERY+>         :: query the user
-    <+?VAR|QUERY+>     :: query the user and propose some choices from 
+    <+?QUERY?+>        :: query the user[1]
+    <+?VAR|QUERY?+>    :: query the user and propose some choices from 
                           the variable b:tskelChoices_{VAR} (separated by 
-                          "\n")
+                          "\n")[1]
     <+bit:BIT>, <+bit:BIT|"DEFAULT">, <+bit:BIT|COMMANDS> :: insert a 
                           bit; if the bit isn't defined for the current 
                           filetype, use DEFAULT; if DEFAULT matches ".*" 
                           insert it as a string; otherwise interpret it 
                           as a command sequence to be fed to normal
     <+call:FUNCTION(ARGS)+> :: insert the result value of some function
+
+[1] If the query ends with a colon, the second question mark will be 
+removed.
+
+Check out the "test_tSkeleton" skeleton for examples.
+
 
                                                     *tSkeleton-modifiers*
 Tags can be modified using modifiers, like in: >
@@ -116,7 +138,7 @@ Example for a ruby class template: >
         <+CURSOR+>
     end
 
-
+-----------------------------------------------------------------------
                                                     *tSkeleton-code-skeletons*
 Code Skeletons~
 
@@ -141,7 +163,8 @@ The default key bindings for inserting code skeletons are:
 
                                                     *tSkeleton-embedded-code*
 Code skeletons may contain vim code that is evaluated before or after 
-expanding the tags.
+expanding the tags. The before/after blocks are fed to |:exec| and must 
+not contain function definitions.
 
 BibTeX example: >
 
@@ -152,22 +175,23 @@ BibTeX example: >
     <tskel:after>
     unlet b:tskelArticleID
     </tskel:after>
-    @ARTICLE{<+b:tskelArticleID+>,
+    @INCOLLECTION{<+b:tskelArticleID+>,
         author   = {<+CURSOR+>},
         title    = {<+ARTICLE TITLE+>},
         crossref = {<+CROSSREF+>},
         pages    = {<+PAGES+>},
-        keywords = {<+KEYWORDS+>},
         abstract = {[[~/Projects/Sci/Abstracts/<+b:tskelArticleID+>.txt]]},
-        url      = {http://<+URL+>},
-        language = {<+LANGUAGE+>},
     }
     <++>
 
 In the above example, we query the user for an ID and insert this ID as 
 entry key and as an abstract's file name.
 
+The before/after blocks are evaluated in the destination buffer. The 
+variants here_before/here_after are evaluated in the scratch buffer for 
+the current code skeleton.
 
+-----------------------------------------------------------------------
                                                     *tSkeleton-commands*
 Commands~
                                                     *:TSkeletonNewFile*
@@ -180,15 +204,24 @@ Commands~
 :TSkeletonBit NAME
 
 
+-----------------------------------------------------------------------
                                                     *tSkeleton-utilities*
+Utilities~
+
                                                     *TSkeletonIncreaseRevisionNumber()*
 The function TSkeletonIncreaseRevisionNumber() provides a way to 
 automatically update a revision number in the form >
 
-    @Revision: 1.0.102
+    @Revision: 1.0.122
 
 In order to use this function, add something like this to your |vimrc| 
 file: >
 
     autocmd BufWritePre * call TSkeletonIncreaseRevisionNumber()
+
+                                                    *:TSkeletonCleanUpBibEntry*
+The TSkeletonCleanUpBibEntry command can be used to purge the current bibtex 
+entry from expendable fields (i.e., lines matching <+.\{-}+>).
+
+For bibtex files, this command is bound to: <Leader>tc
 

@@ -1,0 +1,6 @@
+note         = {<+BIB NOTE+>},
+keywords     = {<+KEYWORDS+>},
+abstract     = {[[~/Projekte/Sci/Exzerpte/<+b:tskelBibID+>.txt]]},
+url          = {http://<+URL+>},
+language     = {<+LANGUAGE+>},
+<+Press <Leader>tc when finished!+>

@@ -5,10 +5,12 @@ if b:tskelBibID == "" | let b:tskelBibID = "<+CURSOR+>" | endif
 <tskel:after>
 unlet b:tskelBibID
 </tskel:after>
-@BOOK{<+b:tskelBibID+>,
+@INBOOK{<+b:tskelBibID+>,
     author       = {<+CURSOR+>},
     editor       = {<+EDITOR+>},
     title        = {<+BIB TITLE+>},
+    chapter      = {<+CHAPTER+>},
+    pages        = {<+PAGES+>},
     publisher    = {<+PUBLISHER+>},
     year         = {<+YEAR+>},
     <+OPTIONAL FIELDS+>

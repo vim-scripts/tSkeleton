@@ -5,16 +5,13 @@ if b:tskelBibID == "" | let b:tskelBibID = "<+CURSOR+>" | endif
 <tskel:after>
 unlet b:tskelBibID
 </tskel:after>
-@ARTICLE{<+b:tskelBibID+>,
-    author       = {<+CURSOR+>},
-    title        = {<+BIB TITLE+>},
-    journal      = {<+JOURNAL+>},
-    year         = {<+YEAR+>},
+@UNPUBLISHED{<+b:tskelBibID+>,
+    author       = {<+BIB AUTHOR+>},
+    title        = {<+CURSOR+>},
+    note         = {<+NOTE+>},
     <+OPTIONAL FIELDS+>
-    volume       = {<+VOL+>},
-    number       = {<+NUM+>},
     month        = {<+MONTH+>},
-    pages        = {<+PAGES+>},
+    year         = {<+YEAR+>},
     <+bit:standardEntries+>
 }
 <++>

@@ -1,17 +1,22 @@
 <tskel:before>
-let b:tskelArticleID = input("ID of bibentry: ")
-if b:tskelArticleID == "" | let b:tskelArticleID = "<+CURSOR+>" | endif
+let b:tskelBibID = input("ID of bibentry: ")
+if b:tskelBibID == "" | let b:tskelBibID = "<+CURSOR+>" | endif
 </tskel:before>
 <tskel:after>
-unlet b:tskelArticleID
+unlet b:tskelBibID
 </tskel:after>
-@BOOK{<+b:tskelArticleID+>,
-    editor     = {<+CURSOR+>},
-    booktitle  = {<+TITLE+>},
-    publisher  = {<+PUBLISHER+>},
-    year       = {<+YEAR+>},
-    keywords   = {<+KEYWORDS+>},
-    url        = {http://<+URL+>},
-    language   = {<+LANGUAGE+>},
+@BOOK{<+b:tskelBibID+>,
+    editor       = {<+CURSOR+>},
+    booktitle    = {<+BIB TITLE+>},
+    publisher    = {<+PUBLISHER+>},
+    year         = {<+YEAR+>},
+    <+OPTIONAL FIELDS+>
+    volume       = {<+VOL+>},
+    number       = {<+NUM+>},
+    month        = {<+MONTH+>},
+    series       = {<+SERIES+>},
+    edition      = {<+EDITION+>},
+    address      = {<+ADDRESS+>},
+    <+bit:standardEntries+>
 }
 <++>
