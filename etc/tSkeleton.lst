@@ -1,0 +1,12 @@
+./doc/tSkeleton.txt
+./etc/tSkeleton.lst
+./plugin/tSkeleton.vim
+./skeletons/batch.bat
+./skeletons/deplate.txt
+./skeletons/latex.tex
+./skeletons/php.inc.php
+./skeletons/php.php
+./skeletons/plugin.vim
+./skeletons/ruby.rb
+./skeletons/shell.sh
+./skeletons/text.txt

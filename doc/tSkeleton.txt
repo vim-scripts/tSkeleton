@@ -1,0 +1,75 @@
+*tSkeleton.txt*              tSkeleton -- Once again, file templates for vim
+
+                                                    *tSkeleton-install*
+Install~
+
+Extract tSkeleton.zip to your local vimfiles directory (see also 
+|add-global-plugin|) so that you get: >
+
+    (Linux etc.) $HOME/.vim/
+    (Windows) $VIM/vimfiles/
+        doc/  etc/ plugin/  skeletons/
+
+These directories are used for installing user-specific plugins. It's possible 
+that these directories already exist and are populated with other plugins -- 
+in which case you probably already knew this. ;-)
+
+Then run >
+
+(Linux etc.) >
+    :helptags $HOME/.vim/doc
+
+(Windows) >
+    :helptags $VIM/vimfiles/doc
+
+Uninstalling tSkeleton requires deleting the files from the archive by hand. 
+Alternatively, you can feed the file etc/tSkeleton.lst to rm: >
+    
+    cd $HOME/.vim/
+    rm -i `cat etc/tSkeleton.lst`
+
+
+                                                    *tSkeleton-usage*
+Usage~
+
+The skeletons are stored in the skeletons subdirectory. Filling in a skeleton 
+when creating a new file is controlled by |:autocmd|. Currently, the following 
+file types are supported by default:
+
+   - batch.bat
+   - deplate.txt
+   - latex.tex
+   - php.inc.php
+   - php.php
+   - plugin.vim
+   - ruby.rb
+   - shell.sh
+   - text.txt
+
+In order to add a new mode, save a skeleton file to 
+~/.vim/skeletons/file.suffix and add something like this to your .vimrc file: >
+
+    autocmd BufNewFile *.suffix call TSkeletonSetup("file.suffix", 0)
+
+In skeleton files, you can use the following tags:
+
+    @{FILE NAME ROOT} :: the file name root
+    @{FILE NAME}      :: the file name
+    @{NOTE}           :: a note
+    @{DATE}           :: the current date (the format is controlled via g:tskelDateFormat)
+    @{AUTHOR}         :: the author's name (g:tskelUserName)
+    @{EMAIL}          :: the author's e-mail (g:tskelUserEmail)
+    @{WEBSITE}        :: the author's homepage (g:tskelUserWWW)
+    @{LICENSE}        :: the name of the license this file is released under (g:tskelLicense)
+    @{&NAME}          :: a vim option
+    @{g:NAME}         :: a global variable
+    @{b:NAME}         :: a buffer local variable
+
+
+                                                    *tSkeleton-commands*
+Commands~
+TSkeletonNewFile ?template, ?destDir, ?destFileName
+
+TSkeletonEdit ?skelDir
+
+

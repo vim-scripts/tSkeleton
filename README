@@ -1,0 +1,124 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=1160
+
+tSkeleton provides file templates and code skeletons (snippets). These 
+templates may contain special tags that are replaced with some computed 
+value (e.g., variables, user input ...), vimscript code, or place 
+holders/jump positions (when used in conjunction with imap.vim or 
+|TSkeletonMapGoToNextTag()|.
+
+
+File templates:
+
+In order to add support for a new filetype, save a skeleton file to 
+~/.vim/skeletons/file.suffix and add something like this to your .vimrc 
+file:
+
+    autocmd BufNewFile *.suffix       TSkeletonSetup template.suffix
+    autocmd BufNewFile /here/*.suffix TSkeletonSetup othertemplate.suffix
+
+Alternatively, you can store templates as:
+
+    ~/vimfiles/skeletons/templates/GROUP/FILETYPE PATTERN
+
+
+Code skeletons:
+
+Smaller skeleton bits are stored in SKELETONS/bits/FILETYPE/ or 
+SKELETONS/bits/general/. I.e., code skeletons can be filetype specific 
+or generally available.
+
+The filenames of the bits may be grouped in submenus as in:
+
+    ../tex/&Define.%5Cnew&command
+    ../tex/&Define.%5Cnew&environment
+
+This will create skeletons for \newcommand and \newenvironment but will 
+group the skeletons under the TSkel.Define. menu with the respective 
+accelerators.
+
+
+Default key maps:
+
+    <Leader>## ... Expand name under cursor
+    <Leader>#t ... Insert code skeleton via command line
+    <c-\><c-\> ... In insert mode, expand the bit before the cursor (on 
+                   a German keyboard this happens to be <c-#><c-#>)
+
+
+General remarks:
+
+A list of special tags:
+
+    <+FILE NAME ROOT+> :: the file name root
+    <+FILE NAME+>      :: the file name
+    <+FILE SUFFIX+>    :: the file suffix
+    <+FILE DIRNAME+>   :: the file's directory
+    <+NOTE+>           :: a note
+    <+DATE+>           :: the current date (the format is controlled via 
+                          g:tskelDateFormat)
+    <+AUTHOR+>         :: the author's name (g:tskelUserName)
+    <+EMAIL+>          :: the author's e-mail (g:tskelUserEmail)
+    <+WEBSITE+>        :: the author's homepage (g:tskelUserWWW)
+    <+LICENSE+>        :: the name of the license this file is released 
+                          under (g:tskelLicense)
+
+tSkeleton also supports the following pseudo-tags:
+    <+CURSOR+>         :: where to place the cursor after insertion
+    <+&NAME+>          :: a vim option
+    <+g:NAME+>         :: a global variable
+    <+b:NAME+>         :: a buffer local variable
+    <+?QUERY?+>        :: query the user
+    <+?VAR|QUERY?+>    :: query the user and propose some choices from 
+                          the variable ${VAR}
+    <+bit:BIT>, <+bit:BIT|"DEFAULT">, <+bit:BIT|COMMANDS> :: insert a 
+                          bit; if the bit isn't defined for the current 
+                          filetype, use DEFAULT; if DEFAULT matches ".*" 
+                          insert it as a string; otherwise interpret it 
+                          as a command sequence to be fed to normal
+    <+tskel:TSKELETON> ... :: same as the above
+    <+include(TSKELETON)+> :: Another synonym for the above.
+    <+call:FUNCTION(ARGS)+> :: Insert the result value of some function
+    <+execute(EX COMMAND)+> :: Run a vim command.
+
+Flow control:
+    <+if(CONDITION)+>
+    <+elseif(CONDITION)+>
+    <+else+>
+    <+endif+>
+
+Loops:
+    <+for(VAR in LIST)+>
+    <+endfor+>, <+endfor(VAR)+>
+
+Variables:
+    <+let(VAR=VALUE)+>
+
+Interaction:
+    <+input(VAR, QUERY, [DEFAULT], [COMPLETION])+>
+
+Other:
+    <+nl+>
+    <+joinline+>
+    <+nop+>
+
+A wiki like table could then be constructed using a skeleton like this:
+
+    <+input('s:my_rows?!', 'Rows: ')+>
+    <+input('s:my_cols?!', 'Cols: ')+>
+    <+for(i in range(s:my_rows))+>
+    |<+for(j in range(s:my_cols))+> <+CURSOR+> |<+endfor(j)+><+nop+>
+    <+endfor(i)+>
+
+Unknown tags are kept in the expanded skeleton. These tags can be used 
+as cursor jump marks. This syntax was originally used by imap (vimscript 
+#244 or vimscript #475). If you don't want to install imap, you can also  
+use |TSkeletonMapGoToNextTag()|.
+
+
+Demo:
+http://vimsomnia.blogspot.com/2010/11/tskeleton-and-stakeholders-vim-plugins.html
+
+
+Also available via git
+http://github.com/tomtom/tskeleton_vim
+
