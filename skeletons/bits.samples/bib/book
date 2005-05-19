@@ -9,6 +9,7 @@ unlet b:tskelBibID
     author       = {<+CURSOR+>},
     editor       = {<+EDITOR+>},
     title        = {<+BIB TITLE+>},
+    booktitle    = {<+BIB TITLE+>},
     publisher    = {<+PUBLISHER+>},
     year         = {<+YEAR+>},
     <+OPTIONAL FIELDS+>

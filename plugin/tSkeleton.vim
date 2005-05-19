@@ -3,8 +3,8 @@
 " @Website:     http://members.a1.net/t.link/
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     21-Sep-2004.
-" @Last Change: 06-Mär-2005.
-" @Revision:    1.3.138
+" @Last Change: 14-Mai-2005.
+" @Revision:    1.4.199
 "
 " vimscript #1160
 "
@@ -13,7 +13,15 @@
 if &cp || exists("loaded_tskeleton") "{{{2
     finish
 endif
-let loaded_tskeleton = 102
+let loaded_tskeleton = 104
+
+if !exists('loaded_multvals') "{{{2
+    runtime plugin/genutils.vim
+    if !exists('loaded_genutils')
+        echoerr "tSkeleton: genutils (vimscript #197) is required"
+        finish
+    endif
+endif
 
 if !exists("g:tskelDir") "{{{2
     if has("win16") || has("win32") || has("win64")
@@ -29,6 +37,7 @@ if !exists("g:tskelLicense") "{{{2
     let g:tskelLicense = "GPL (see http://www.gnu.org/licenses/gpl.txt)"
 endif
 
+if !exists("g:tskelMapLeader")     | let g:tskelMapLeader     = "<Leader>#"   | endif "{{{2
 if !exists("g:tskelPatternLeft")   | let g:tskelPatternLeft   = "<+"          | endif "{{{2
 if !exists("g:tskelPatternRight")  | let g:tskelPatternRight  = "+>"          | endif "{{{2
 if !exists("g:tskelPatternCursor") | let g:tskelPatternCursor = "<+CURSOR+>"  | endif "{{{2
@@ -43,19 +52,25 @@ if !exists("g:tskelRevisionVerRx")    | let g:tskelRevisionVerRx = '\(RC\d*\|pre
 if !exists("g:tskelRevisionGrpIdx")   | let g:tskelRevisionGrpIdx = 3 | endif "{{{2
 
 if !exists("g:tskelMaxRecDepth") | let g:tskelMaxRecDepth = 10 | endif "{{{2
+if !exists("g:tskelChangeDir")   | let g:tskelChangeDir   = 1  | endif "{{{2
 
 if !exists("g:tskelDontSetup") "{{{2
-    autocmd BufNewFile *.bat     TSkeletonSetup batch.bat
-    autocmd BufNewFile *.tex     TSkeletonSetup latex.tex
-    autocmd BufNewFile *.rb      TSkeletonSetup ruby.rb
-    autocmd BufNewFile *.rbx     TSkeletonSetup ruby.rb
-    autocmd BufNewFile *.sh      TSkeletonSetup shell.sh
-    autocmd BufNewFile *.txt     TSkeletonSetup text.txt
-    autocmd BufNewFile *.vim     TSkeletonSetup plugin.vim
-    autocmd BufNewFile *.inc.php TSkeletonSetup php.inc.php
-    autocmd BufNewFile *.php     TSkeletonSetup php.php
-    autocmd BufNewFile *.html    TSkeletonSetup html.html
+    autocmd BufNewFile *.bat       TSkeletonSetup batch.bat
+    autocmd BufNewFile *.tex       TSkeletonSetup latex.tex
+    autocmd BufNewFile tc-*.rb     TSkeletonSetup tc-ruby.rb
+    autocmd BufNewFile *.rb        TSkeletonSetup ruby.rb
+    autocmd BufNewFile *.rbx       TSkeletonSetup ruby.rb
+    autocmd BufNewFile *.sh        TSkeletonSetup shell.sh
+    autocmd BufNewFile *.txt       TSkeletonSetup text.txt
+    autocmd BufNewFile *.vim       TSkeletonSetup plugin.vim
+    autocmd BufNewFile *.inc.php   TSkeletonSetup php.inc.php
+    autocmd BufNewFile *.class.php TSkeletonSetup php.class.php
+    autocmd BufNewFile *.php       TSkeletonSetup php.php
+    autocmd BufNewFile *.tpl       TSkeletonSetup smarty.tpl
+    autocmd BufNewFile *.html      TSkeletonSetup html.html
 endif
+
+autocmd BufNewFile,BufRead */skeletons/*    setf tskeleton
 
 let s:tskelScratchIdx = 0
 let s:tskelScratchMax = 0
@@ -69,23 +84,23 @@ let s:tskelPattern = g:tskelPatternLeft ."\\("
 
 fun! TSkeletonFillIn(bit, ...) "{{{3
     " try
-        let filetype = a:0 >= 1 && a:1 != "" ? a:1 : ""
-        let ft       = filetype != "" ? ", '". filetype ."'" : ""
+        let b:tskelFiletype = a:0 >= 1 && a:1 != "" ? a:1 : ""
+        let ft = b:tskelFiletype != "" ? ", '". b:tskelFiletype ."'" : ""
         call <SID>GetBitProcess("before", "b:tskelBitProcess_")
         call <SID>GetBitProcess("after", "b:tskelBitProcess_")
         call <SID>GetBitProcess("here_before", "b:tskelBitProcess_")
         call <SID>GetBitProcess("here_after", "b:tskelBitProcess_")
         call <SID>EvalBitProcess("before", 1)
         call <SID>EvalBitProcess("here_before", 0)
-        " Work-around for interesting vim-behaviour
-        silent norm! ggO
-        while search(s:tskelPattern, "W") > 0
+        silent norm! G$
+        let next = search(s:tskelPattern, "w")
+        while next > 0
             let col  = virtcol(".")
             let line = strpart(getline("."), col - 1)
             let text = substitute(line, s:tskelPattern .'.*$', '\1', '')
             let mod  = substitute(line, s:tskelPattern .'.*$', '\4', '')
             let s:tskelPostExpand = ""
-            let repl = <SID>HandleTag(text, filetype)
+            let repl = <SID>HandleTag(text, b:tskelFiletype)
             if repl != "" && line =~ '\V\^'. escape(repl, '\')
                 norm! l
             else
@@ -97,11 +112,10 @@ fun! TSkeletonFillIn(bit, ...) "{{{3
                 exec s:tskelPostExpand
                 let s:tskelPostExpand = ""
             end
+            let next = search(s:tskelPattern, "W")
 		endwhile
-        " Undo Work-around
-        silent norm! ggdd
         if !a:bit
-            call <SID>SetCursor("%")
+            call <SID>SetCursor("%", "")
         endif
         call <SID>EvalBitProcess("here_after", 0)
         call <SID>EvalBitProcess("after", 1)
@@ -128,15 +142,34 @@ fun! <SID>HandleTag(match, filetype) "{{{3
     end
 endf
 
-fun! <SID>SetCursor(range, ...) "{{{3
-    let findOnly = a:0 >= 1 ? a:0 : 0
-    let l = search(g:tskelPatternCursor)
-    if l > 0
-        if !findOnly
-            let c = col(".")
-            silent exec a:range .'s/'. g:tskelPatternCursor .'//e'
-            silent exec "norm! ". c ."|"
+fun! <SID>SetCursor(from, to, ...) "{{{3
+    let findOnly = a:0 >= 1 ? a:1 : (s:tskelScratchIdx > 1)
+    let c = virtcol(".")
+    let l = line(".")
+    if a:to == ""
+        if a:from == "%"
+            silent norm! gg
+        else
+            exec a:from
         endif
+    else
+        exec a:to
+    end
+    if line(".") == 1
+        norm! G$
+        let l = search(g:tskelPatternCursor, "w")
+    else
+        norm! k$
+        let l = search(g:tskelPatternCursor, "W")
+    end
+    if l == 0
+        silent exec "norm! ". c ."|". l ."G"
+        return 0
+    elseif !findOnly
+        let c = col(".")
+        silent exec 's/'. g:tskelPatternCursor .'//e'
+        " silent exec 's/'. g:tskelPatternCursor .'//e'
+        silent exec "norm! ". c ."|"
     endif
     return l
 endf
@@ -154,23 +187,29 @@ fun! <SID>Query(arg) "{{{3
     let sepx = match(a:arg, "|")
     let var  = strpart(a:arg, 0, sepx)
     let text = substitute(strpart(a:arg, sepx + 1), ':?$', ':', '')
-    if var != "" && TSkeletonEvalInDestBuffer("exists('". var ."')")
-        let b:tskelQueryIndex = 0
-        let val = TSkeletonEvalInDestBuffer(var)
-        echo "Choices:"
-        let val = substitute("\n". val. "\n", "\n\\zs\\(.\\{-}\\)\\ze\n", "\\=<SID>QuerySeparator(submatch(1))", "g")
-        unlet b:tskelQueryIndex
-        let sel = input(text. " ")
-        if sel != ""
-            let rv = matchstr(val, "\n". sel .": \\zs\\(.\\{-}\\)\\ze\n")
-            return rv
+    if var != ""
+        if !TSkeletonEvalInDestBuffer("exists('". var ."')")
+            echom "Unknown choice variable: ". var
         else
-            return ""
+            let b:tskelQueryIndex = 0
+            let val = TSkeletonEvalInDestBuffer(var)
+            echo "Choices:"
+            let val = substitute("\n". val. "\n", "\n\\zs\\(.\\{-}\\)\\ze\n", "\\=<SID>QuerySeparator(submatch(1))", "g")
+            unlet b:tskelQueryIndex
+            let sel = input(text. " ")
+            if sel != ""
+                let rv = matchstr(val, "\n". sel .": \\zs\\(.\\{-}\\)\\ze\n")
+                if rv == val
+                    return sel
+                else
+                    return rv
+                endif
+            else
+                return ""
+            endif
         endif
-    else
-        echom "Unknown choice variable: ". var
-        return input(text. " ")
     endif
+    return input(text. " ")
 endf
 
 fun! <SID>QuerySeparator(txt)
@@ -188,22 +227,17 @@ endf
 
 fun! <SID>GetBitProcess(name, var) "{{{3
     silent norm! gg
-    exec 's/^\s*<tskel:'. a:name .'>\s*\n\(\_.\{-}\)\n\s*<\/tskel:'. a:name .'>\s*\n/\=<SID>SaveBitProcess("'. a:name .'", "'. a:var .'", submatch(1))/e'
+    exec 's/^\s*<tskel:'. a:name .'>\s*\n\(\(.\{-}\n\)\{-}\)\s*<\/tskel:'. a:name .'>\s*\n/\=<SID>SaveBitProcess("'. a:name .'", "'. a:var .'", submatch(1))/e'
 endf
 
 fun! <SID>EvalBitProcess(name, evalInDestBuffer) "{{{3
-    if a:evalInDestBuffer
-        if TSkeletonEvalInDestBuffer('exists("b:tskelBitProcess_'. a:name .'_'. s:tskelScratchIdx .'")')
-            " call TSkeletonExecInDestBuffer('echom "DBG ". b:tskelBitProcess_'. a:name .'_'. s:tskelScratchIdx)
+    if TSkeletonEvalInDestBuffer('exists("b:tskelBitProcess_'. a:name .'_'. s:tskelScratchIdx .'")')
+        if a:evalInDestBuffer
             call TSkeletonExecInDestBuffer('exec b:tskelBitProcess_'. a:name .'_'. s:tskelScratchIdx)
-            call TSkeletonExecInDestBuffer('unlet b:tskelBitProcess_'. a:name .'_'. s:tskelScratchIdx)
+        else
+            exec TSkeletonEvalInDestBuffer('b:tskelBitProcess_'. a:name .'_'. s:tskelScratchIdx)
         endif
-    else
-        if exists("b:tskelBitProcess_'. a:name .'_'. s:tskelScratchIdx .'")
-            " echom "DBG ". b:tskelBitProcess_{a:name}_{s:tskelScratchIdx}
-            exec b:tskelBitProcess_{a:name}_{s:tskelScratchIdx}
-            unlet b:tskelBitProcess_{a:name}_{s:tskelScratchIdx}
-        endif
+        call TSkeletonExecInDestBuffer('unlet b:tskelBitProcess_'. a:name .'_'. s:tskelScratchIdx)
     endif
 endf
 
@@ -266,7 +300,7 @@ fun! <SID>Expand(bit, ...) "{{{3
         endif
         let @t = ""
         let bitfname = <SID>SelectBit(name, ft)
-        let indent   = <SID>GetIndent(line("."))
+        let indent   = <SID>GetIndent(getline("."))
         if bitfname != ""
             let setCursor = <SID>RetrieveBit(bitfname, indent, ft)
         endif
@@ -339,6 +373,10 @@ fun! TSkeleton_DATE() "{{{3
     return strftime(TSkeletonGetVar("tskelDateFormat"))
 endf
 
+fun! TSkeleton_TIME() "{{{3
+    return strftime("%X")
+endf
+
 fun! TSkeleton_AUTHOR() "{{{3
     return TSkeletonGetVar("tskelUserName")
 endf
@@ -376,6 +414,9 @@ fun! TSkeletonSetup(template, ...) "{{{3
             let &cpoptions = cpoptions
         endtry
         call TSkeletonFillIn(0, &filetype)
+        if g:tskelChangeDir
+            exec "cd ". substitute(expand("%:p:h"), '\', '/', 'g')
+        endif
         let b:tskelDidFillIn = 1
     endif
 endf
@@ -504,11 +545,14 @@ fun! <SID>RetrieveBit(bit, indent, ...) "{{{3
         let s:tskelScratchMax = s:tskelScratchIdx
         let s:tskelScratchNr{s:tskelScratchIdx} = -1
     endif
+    let setCursor = 0
     try
         let tsbnr = bufnr(s:tskelScratchNr{s:tskelScratchIdx})
         if tsbnr >= 0
-            silent exec "buffer ". tsbnr
+            " silent split
+            silent exec "sbuffer ". tsbnr
         else
+            silent split
             silent exec "edit [TSkeletonScratch_". s:tskelScratchIdx ."]"
             let s:tskelScratchNr{s:tskelScratchIdx} = bufnr("%")
         endif
@@ -525,20 +569,16 @@ fun! <SID>RetrieveBit(bit, indent, ...) "{{{3
         call <SID>IndentLines(1, line("$"), a:indent)
         silent norm! gg
         call TSkeletonFillIn(1, ft)
-        let setCursor = <SID>SetCursor(".,$", 1)
+        let setCursor = <SID>SetCursor("%", "", 1)
         silent norm! ggvGk$"ty
-        return setCursor
     finally
         let &cpoptions = cpoptions
+        " if s:tskelScratchIdx > 0
+            " let s:tskelScratchNr{s:tskelScratchIdx} = -1
+            " bwipeout!
+            wincmd c
+        " endif
         let s:tskelScratchIdx = s:tskelScratchIdx - 1
-        " trick |alternate-file|
-        " try
-        "     silent edit #2
-        " catch
-        "     if expand("%") == ""
-        "         throw "This is the first anonymous buffer ... aborting"
-        "     endif
-        " endtry
         if s:tskelScratchIdx == 0
             silent exec "buffer ". s:tskelDestBufNr
             let s:tskelDestBufNr = -1
@@ -546,6 +586,7 @@ fun! <SID>RetrieveBit(bit, indent, ...) "{{{3
             silent exec "buffer ". s:tskelScratchNr{s:tskelScratchIdx}
         endif
     endtry
+    return setCursor
 endf
 
 if exists("g:tskelSimpleBits") && g:tskelSimpleBits "{{{2
@@ -560,12 +601,26 @@ else
         set cpoptions-=a
         let t = @t
         try
-            let l = line(".")
+            let c  = virtcol(".")
+            let e  = virtcol("$")
+            let l  = line(".")
+            let li = getline(l)
+            " Adjust for vim idiocracy
+            if c == e - 1 && li[c - 1] == " "
+                let e = e - 1
+            endif
             let i = <SID>GetIndent(l)
             let setCursor = <SID>RetrieveBit(a:bit, i)
-            silent norm! $"tgp
+            " silent norm! $"tgp
+            exec 'silent norm! '. c .'|'
+            if c == e
+                silent norm! "tgp
+            else
+                silent norm! "tgP
+            end
             if setCursor
-                call <SID>SetCursor(".,$")
+                let ll = l + setCursor - 1
+                call <SID>SetCursor(l, ll)
             endif
         finally
             let @t = t
@@ -574,7 +629,7 @@ else
 endif
 
 fun! <SID>GetIndent(line) "{{{3
-    return matchstr(getline(a:line), '^\(\s*\)')
+    return matchstr(a:line, '^\(\s*\)')
 endf
 
 fun! <SID>IndentLines(from, to, indent) "{{{3
@@ -604,40 +659,83 @@ fun! <SID>SelectBit(bit, ...) "{{{3
 endf
 
 fun! TSkeletonBit(bit) "{{{3
-    " try
+    call SaveWindowSettings2('tSkeleton', 1)
+    try
         let bf = <SID>SelectBit(a:bit)
         if bf != ""
             call <SID>InsertBit(bf)
             return 1
         else
-            echom "TSkeletonBit: Unknown bit '". a:bit ."'"
+            " echom "TSkeletonBit: Unknown bit '". a:bit ."'"
             return 0
         endif
-    " catch
-    "     echom "An error occurred in TSkeletonBit() ... ignored"
-    " endtry
+        " catch
+        "     echom "An error occurred in TSkeletonBit() ... ignored"
+    finally
+        call RestoreWindowSettings2('tSkeleton')
+    endtry
 endf
 
 command! -nargs=1 -complete=custom,TSkeletonSelectBit TSkeletonBit
             \ call TSkeletonBit(<q-args>)
 
 if !hasmapto("TSkeletonBit") "{{{2
-    noremap <unique> <Leader>tt :TSkeletonBit 
+    " noremap <unique> <Leader>tt ""diw:TSkeletonBit <c-r>"
+    exec "noremap <unique> ". g:tskelMapLeader ."t :TSkeletonBit "
 endif
 
 fun! TSkeletonExpandBitUnderCursor() "{{{3
     echo
     call <SID>PrepareBits()
     let t = @t
-    silent norm! "tdiw
-    if !TSkeletonBit(@t)
-        silent norm! "tP
-    endif
-    let @t = t
+    try
+        let @t = ""
+        silent norm! "tdiw
+        let bit = @t
+        if TSkeletonBit(bit) == 1
+            " silent norm! "tP
+            return 1
+        elseif has("menu")
+            let rx = "\n\\zs". bit .".\\{-}\\ze\n"
+            let t = "\n". b:tskelBits
+            let m = strlen(t)
+            let i = 0
+            let e = 0
+            let j = 0
+            try
+                aunmenu ]TSkeleton
+            catch
+            endtry
+            while 1
+                let i = match(t, rx, e)
+                if i >= 0
+                    let j = j + 1
+                    let e = matchend(t, rx, i - 1)
+                    let p = strpart(t, i, e - i)
+                    let x = substitute(j, '\(.\)$', '\&\1', '')
+                    exec "amenu ]TSkeleton.". j .'\ '. p ." :TSkeletonBit ". p ."<cr>"
+                else
+                    break
+                endif
+            endwh
+            if j == 1
+                exec "TSkeletonBit ". p
+            elseif j > 0
+                popup ]TSkeleton
+            else
+                echom "TSkeletonBit: Unknown bit '". bit ."'"
+                silent norm! u
+                " silent norm! "tP
+            endif
+        endif
+        return 0
+    finally
+        let @t = t
+    endtry
 endf
 
 if !hasmapto("TSkeletonExpandBitUnderCursor") "{{{2
-    nnoremap <unique> <Leader>t# :call TSkeletonExpandBitUnderCursor()<cr>
+    exec "nnoremap <unique> ". g:tskelMapLeader ."# :call TSkeletonExpandBitUnderCursor()<cr>"
     nnoremap <unique> <Leader># :call TSkeletonExpandBitUnderCursor()<cr>
 endif
 
@@ -651,11 +749,46 @@ fun! TSkeletonIncreaseRevisionNumber() "{{{3
     normal ``
 endfun
 
+" fun! ToirtoiseSvnLogMsg() "{{{3
+"     let rev = exists("b:revisionRx") ? b:revisionRx : g:tskelRevisionMarkerRx
+"     let ver = exists("b:versionRx")  ? b:versionRx  : g:tskelRevisionVerRx
+"     normal m`
+"     let rv = ''
+"     exe '%g/'.rev.'\(\('.ver.'\)*-\?\d\+\)/let rv=getline(".")'
+"     normal ``
+"     return rv
+" endf
+
 " autocmd BufWritePre * call TSkeletonIncreaseRevisionNumber()
 
-command! TSkeletonCleanUpBibEntry '{,'}s/^.*<+.\{-}+>.*\n//e
-autocmd FileType bib if !hasmapto(":TSkeletonCleanUpBibEntry") | noremap <buffer> <Leader>tc :TSkeletonCleanUpBibEntry<cr> | endif
+fun! TSkeletonCleanUpBibEntry()
+    '{,'}s/^.*<+.\{-}+>.*\n//e
+    if exists('*TSkeletonCleanUpBibEntry_User')
+        call TSkeletonCleanUpBibEntry_User()
+    endif
+endf
+command! TSkeletonCleanUpBibEntry call TSkeletonCleanUpBibEntry()
+autocmd FileType bib if !hasmapto(":TSkeletonCleanUpBibEntry") | exec "noremap <buffer> ". g:tskelMapLeader ."c :TSkeletonCleanUpBibEntry<cr>" | endif
 
+fun! TSkeletonGoToNextTag()
+    let rx = '<+.\{-}+>'
+    " let x  = search(rx, 'W')
+    let x  = search(rx)
+    if x > 0
+        let ll = exists('b:tskelLastLine') ? b:tskelLastLine : 0
+        let lc = exists('b:tskelLastCol')  ? b:tskelLastCol  : 0
+        let l  = strpart(getline(x), lc)
+        let mb = match(l, rx) + lc + 1
+        let me = matchend(l, rx) + lc - mb + 1
+        exec 'norm! v'. me .'l'
+    endif
+endf
+
+fun! TSkeletonMapGoToNextTag()
+    noremap <c-j> :call TSkeletonGoToNextTag()<cr>
+    vnoremap <c-j> <C-\><C-N>:call TSkeletonGoToNextTag()<cr>
+    inoremap <c-j> <c-o>:call TSkeletonGoToNextTag()<cr>
+endf
 
 finish
 1.0
@@ -690,4 +823,19 @@ an example)
 - a query must be enclosed in question marks as in <+?Which ID?+>
 - the "test_tSkeleton" skeleton can be used to test if tSkeleton is working
 - and: after/before blocks must not contain function definitions
+
+1.4
+- Popup menu with possible completions if TSkeletonExpandBitUnderCursor() is 
+called for an unknown code skeleton (if there is only one possible completion, 
+this one is automatically selected)
+- Make sure not to change the alternate file and not to distort the window 
+layout (requires genutils)
+- Syntax highlighting for code skeletons
+- Skeleton bits can now be expanded anywhere in the line. This makes it 
+possible to sensibly use small bits like date or time.
+- Minor adjustments
+- g:tskelMapLeader for easy customization of key mapping (changed the map 
+leader to "<Leader>#" in order to avoid a conflict with Align; set 
+g:tskelMapLeader to "<Leader>t" to get the old mappings)
+- Utility function: TSkeletonGoToNextTag(); imaps.vim like key bindings via TSkeletonMapGoToNextTag()
 

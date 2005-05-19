@@ -1,14 +1,7 @@
-<tskel:before>
-let b:tskelOrigBufName = bufname(b:tskelOrigBuffer)
-</tskel:before>
-<tskel:after>
-unlet b:tskelOrigBufName
-</tskel:after>
 #AU: <+TEXT AUTHOR+>
 #TI: <+TEXT TITLE+>
 #DATE: <+YEAR+>
-
-% BIB::[-monos-]#<+b:tskelOrigBufName:s/\..*$//+>
+<+bit:bibref+>
 
 #s<+PAGE+>
 <+CURSOR+>

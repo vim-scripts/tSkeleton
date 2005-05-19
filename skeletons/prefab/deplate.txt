@@ -1,8 +1,0 @@
-% vi: ft=viki:tw=78
-
-#AU: @{AUTHOR}
-#TI: @{TITLE}
-#DATE: today
-
-@@
-

@@ -1,4 +1,3 @@
 def <+NAME+>(<+ARGS+>)
-    <+bit:def+>
     <+CURSOR+>
 end

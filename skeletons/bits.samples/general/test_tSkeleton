@@ -24,5 +24,5 @@ Capitalized:           <+b:foo:c+>
 Lower:                 <+AUTHOR:l+>
 Upper:                 <+AUTHOR:u+>
 CamelCase:             <+AUTHOR:C+>
-Substiutue:            <+call:bufname("%"):s/[aeiou]/_/+>
+Substitute:            <+call:bufname("%"):s/[aeiou]/_/+>
 

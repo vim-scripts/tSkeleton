@@ -15,7 +15,7 @@ vimfiles directory (see also |add-global-plugin|) so that you get: >
         skeletons/prefab/ skeletons/bits.samples/...
 
 The files in the "prefab" and "bits.samples" subdirectories are part of 
-the distribution. Copy them to there proper places and adjust them to 
+the distribution. Copy them to their proper places and adjust them to 
 your needs:
 
     skeletons/
@@ -47,6 +47,8 @@ Alternatively, you can feed the file etc/tSkeleton.lst to rm: >
     
     cd $HOME/.vim/
     rm -i `cat etc/tSkeleton.lst`
+
+Some aspects were originally inspired by vimscript #982.
 
 
 -----------------------------------------------------------------------
@@ -158,8 +160,8 @@ current line.
 The default key bindings for inserting code skeletons are:
 
     <Leader>#  ... Expand name under cursor
-    <Leader>t# ... Expand name under cursor
-    <Leader>tt ... Insert code skeleton via command line
+    <Leader>## ... Expand name under cursor
+    <Leader>#t ... Insert code skeleton via command line
 
                                                     *tSkeleton-embedded-code*
 Code skeletons may contain vim code that is evaluated before or after 
@@ -212,7 +214,7 @@ Utilities~
 The function TSkeletonIncreaseRevisionNumber() provides a way to 
 automatically update a revision number in the form >
 
-    @Revision: 1.0.122
+    @Revision: 1.0.126
 
 In order to use this function, add something like this to your |vimrc| 
 file: >
@@ -224,4 +226,9 @@ The TSkeletonCleanUpBibEntry command can be used to purge the current bibtex
 entry from expendable fields (i.e., lines matching <+.\{-}+>).
 
 For bibtex files, this command is bound to: <Leader>tc
+
+                                                    *TSkeletonMapGoToNextTag()*
+                                                    *TSkeletonGoToNextTag()*
+If you don't want to install imaps.vim, this function will map <c-j> to 
+TSkeletonGoToNextTag() in order to easily jump between tags.
 
