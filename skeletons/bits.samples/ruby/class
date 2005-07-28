@@ -9,4 +9,4 @@ class <+FILE NAME ROOT:cs*\W*_*+>::<+CURSOR+>
     
     <+BODY+>
 end
-<+NEXT+>
+<++>

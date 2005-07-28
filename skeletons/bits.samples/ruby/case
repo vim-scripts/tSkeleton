@@ -1,10 +1,7 @@
-<tskel:after>
-let @* = "when <+CASE+>\<c-j>    <+DO+>\<c-j>"
-</tskel:after>
 case <+CURSOR+>
 when <+CASE+>
     <+DO+>
 else
     <+DO+>
 end
-<+NEXT+>
+<++>

@@ -1,3 +1,4 @@
-def <+NAME+>(<+ARGS+>)
+begin
     <+CURSOR+>
+<+tskel:ensure+>
 end<++>

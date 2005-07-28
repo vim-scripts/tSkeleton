@@ -10,7 +10,7 @@ Extract tSkeleton.zip (or copy the contained files) to your local
 vimfiles directory (see also |add-global-plugin|) so that you get: >
 
     (Linux etc.) $HOME/.vim/
-    (Windows) $VIM/vimfiles/
+    (Windows) $HOME/vimfiles/
         doc/ etc/ plugin/ skeletons/ skeletons/bits/...
         skeletons/prefab/ skeletons/bits.samples/...
 
@@ -20,15 +20,15 @@ your needs:
 
     skeletons/
         FILE TEMPLATES ...
+        menu/
         bits/
             general/
                 GENERAL CODE SKELETONS ...
             &filetype/
                 FILETYPE SPECIFIC CODE SKELETONS ...
 
-When updating from an older version, you might want to backup your 
-skeletons beforehand. If you re-use skeletons from version 1.0 with a 
-later version, you have to update the |tSkeleton-place-holder| markup.
+If you re-use skeletons from version 1.0 with a later version, you have 
+to update the |tSkeleton-place-holder| markup.
 
 Then run >
 
@@ -40,6 +40,10 @@ Then run >
 
 You might want to use imaps.vim's (vimscript #244 or vimscript #475) place 
 holders in conjunction with template bits.
+
+If you don't use imaps.vim, you can :call TSkeletonMapGoToNextTag(). 
+This will map <c-j> to a function that makes the cursor jump to the next 
+tag.
 
                                                     *tSkeleton-uninstall*
 Uninstalling tSkeleton requires deleting the files from the archive by hand. 
@@ -112,6 +116,7 @@ tSkeleton also supports the following pseudo-tags:
                           filetype, use DEFAULT; if DEFAULT matches ".*" 
                           insert it as a string; otherwise interpret it 
                           as a command sequence to be fed to normal
+    <+tskel:TSKELETON> ... :: same as the above
     <+call:FUNCTION(ARGS)+> :: insert the result value of some function
 
 [1] If the query ends with a colon, the second question mark will be 
@@ -159,7 +164,6 @@ current line.
                                                     *tSkeleton-key-bindings*
 The default key bindings for inserting code skeletons are:
 
-    <Leader>#  ... Expand name under cursor
     <Leader>## ... Expand name under cursor
     <Leader>#t ... Insert code skeleton via command line
 
@@ -171,11 +175,11 @@ not contain function definitions.
 BibTeX example: >
 
     <tskel:before>
-    let b:tskelArticleID = input("ID of bibentry: ")
-    if b:tskelArticleID == "" | let b:tskelArticleID = "<+CURSOR+>" | endif
+        let b:tskelArticleID = input("ID of bibentry: ")
+        if b:tskelArticleID == "" | let b:tskelArticleID = "<+CURSOR+>" | endif
     </tskel:before>
     <tskel:after>
-    unlet b:tskelArticleID
+        unlet b:tskelArticleID
     </tskel:after>
     @INCOLLECTION{<+b:tskelArticleID+>,
         author   = {<+CURSOR+>},
@@ -214,7 +218,7 @@ Utilities~
 The function TSkeletonIncreaseRevisionNumber() provides a way to 
 automatically update a revision number in the form >
 
-    @Revision: 1.0.126
+    @Revision: 1.0.134
 
 In order to use this function, add something like this to your |vimrc| 
 file: >

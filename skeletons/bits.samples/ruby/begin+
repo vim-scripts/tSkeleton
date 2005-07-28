@@ -1,0 +1,9 @@
+begin
+    <+CURSOR+>
+# rescue <+EXCEPTION+> => e
+#    <+HANDLER+>
+# else
+#    <+HANDLER+>
+# ensure
+#    <+HANDLER+>
+end<++>

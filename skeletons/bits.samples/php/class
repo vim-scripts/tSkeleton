@@ -4,6 +4,9 @@ let b:tskelName = input("Class name: ", "")
 <tskel:after>
 unlet b:tskelName
 </tskel:after>
+/**
+ * @package <+b:tskelName+>
+ */
 class <+b:tskelName+> extends <+CURSOR+> {
     function <+b:tskelName+>() {
         <+BODY+>
