@@ -1,2 +1,2 @@
-rescue <+EXCEPTION+> => e
+rescue<+CURSOR+> <+EXCEPTION_CLASS+> => e
     <+HANDLER+>

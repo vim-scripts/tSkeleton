@@ -1,4 +1,4 @@
 fun! <+CURSOR+>(<+ARGS+>)
     <+BODY+>
 endf
-<+NEXT+>
+<++>

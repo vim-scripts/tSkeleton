@@ -3,4 +3,4 @@ try
 finally <+COND+>
     <+HANDLER+>
 endtry
-<+CONT+>
+<++>

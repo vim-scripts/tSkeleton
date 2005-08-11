@@ -1,9 +1,0 @@
-<tskel:before>
-let b:tskelChoices_method = "get\npost"
-</tskel:before>
-<tskel:after>
-unlet b:tskelChoices_method
-</tskel:after>
-<form name="<+NAME+>" action="<+?Action?+>" method="<+?method|Method?+>">
-    <+CURSOR+>
-</form>
