@@ -6,7 +6,7 @@ if b:tskelBibID == "" | let b:tskelBibID = "<+CURSOR+>" | endif
 unlet b:tskelBibID
 </tskel:after>
 @TECHREPORT{<+b:tskelBibID+>,
-    AUTHOR       = {<+CURSOR+>},
+    author       = {<+CURSOR+>},
     title        = {<+BIB TITLE+>},
     institution  = {<+INSTITUTION+>},
     year         = {<+YEAR+>},

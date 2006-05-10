@@ -41,10 +41,10 @@
 ^\\s*#IF.*	fmt= fmt== fmt=~ fmt!= fmt!=~ == =~ != !=~
 ^\\s*#ELSEIF.*	fmt= fmt== fmt=~ fmt!= fmt!=~ == =~ != !=~
 ^\\s*#IMG.*	fmt= if== if=~ if!= if!=~ id= here! top! bottom! bw= bh= w= h=
-^\\s*#INCLUDE.*	fmt= if== if=~ if!= if!=~ file=
+^\\s*#INCLUDE.*	fmt= if== if=~ if!= if!=~ file= embeddedTextRx= embeddedVerbatim=
 ^\\s*#LIST.*	fmt= if== if=~ if!= if!=~ page!
 ^\\s*#MAKETITLE.*	fmt= if== if=~ if!= if!=~ page!
 
-{[^}]*	fmt= id= if== if=~ if!= if!=~
+{[^{}]*\s\\{-}[^{}]*	fmt= id= if== if=~ if!= if!=~
 ^\\s*#\\u.*	fmt= id= if== if=~ if!= if!=~
 

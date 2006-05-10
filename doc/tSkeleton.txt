@@ -97,8 +97,7 @@ tSkeleton also supports the following pseudo-tags:
     <+b:NAME+>         :: a buffer local variable
     <+?QUERY?+>        :: query the user[1]
     <+?VAR|QUERY?+>    :: query the user and propose some choices from 
-                          the variable b:tskelChoices_{VAR} (separated by 
-                          "\n")[1]
+                          the variable ${VAR} (separated by "\n")[1]
     <+bit:BIT>, <+bit:BIT|"DEFAULT">, <+bit:BIT|COMMANDS> :: insert a 
                           bit; if the bit isn't defined for the current 
                           filetype, use DEFAULT; if DEFAULT matches ".*" 
@@ -304,7 +303,7 @@ Utilities~
 The function TSkeletonIncreaseRevisionNumber() provides a way to 
 automatically update a revision number in the form >
 
-    @Revision: 1.0.168
+    @Revision: 1.0.169
 
 In order to use this function, add something like this to your |vimrc| 
 file: >
