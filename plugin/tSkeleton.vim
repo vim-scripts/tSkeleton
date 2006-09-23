@@ -2,8 +2,8 @@
 " @Author:      Thomas Link (samul AT web.de)
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     21-Sep-2004.
-" @Last Change: 10-Mai-2006.
-" @Revision:    2.1.1629
+" @Last Change: 23-Sep-2006.
+" @Revision:    2.2.1649
 "
 " vimscript #1160
 " http://www.vim.org/scripts/script.php?script_id=1160
@@ -29,7 +29,7 @@
 if &cp || exists("loaded_tskeleton") "{{{2
     finish
 endif
-let loaded_tskeleton = 201
+let loaded_tskeleton = 202
 
 if !exists('loaded_genutils') "{{{2
     runtime plugin/genutils.vim
@@ -121,32 +121,34 @@ fun! TSkeletonFillIn(bit, ...) "{{{3
     " try
         let b:tskelFiletype = a:0 >= 1 && a:1 != "" ? a:1 : ""
         let ft = b:tskelFiletype != "" ? ", '". b:tskelFiletype ."'" : ""
-        call <SID>GetBitProcess("msg", 2)
-        let before  = <SID>GetBitProcess("before", 1)
-        let after   = <SID>GetBitProcess("after", 1)
-        let hbefore = <SID>GetBitProcess("here_before", 0)
-        let hafter  = <SID>GetBitProcess("here_after", 0)
+        call <SID>GetBitProcess('msg', 2)
+        let before  = <SID>GetBitProcess('before', 1)
+        let after   = <SID>GetBitProcess('after', 1)
+        let hbefore = <SID>GetBitProcess('here_before', 0)
+        let hafter  = <SID>GetBitProcess('here_after', 0)
         if before
-            call <SID>EvalBitProcess("before", 1)
+            call <SID>EvalBitProcess('before', 1)
         endif
         if hbefore
-            call <SID>EvalBitProcess("here_before", 0)
+            call <SID>EvalBitProcess('here_before', 0)
         endif
         silent norm! G$
-        let s:tskelLine_{s:tskelScratchIdx} = search(s:tskelPattern, "w")
+        let s:tskelLine_{s:tskelScratchIdx} = search(s:tskelPattern, 'w')
         while s:tskelLine_{s:tskelScratchIdx} > 0
-            let col  = virtcol(".")
+            " let col  = virtcol(".")
+            let col  = col(".")
             let line = strpart(getline("."), col - 1)
             let text = substitute(line, s:tskelPattern .'.*$', '\1', '')
             let s:tskelPostExpand = ""
             let repl = <SID>HandleTag(text, b:tskelFiletype)
-            if repl != "" && line =~ '\V\^'. escape(repl, '\')
+            if repl != '' && line =~ '\V\^'. escape(repl, '\')
                 norm! l
             else
                 let mod  = substitute(line, s:tskelPattern .'.*$', '\4', '')
                 let repl = <SID>Modify(repl, mod)
                 let repl = substitute(repl, "\<c-j>", "", "g")
-                silent exec 's/\%'. col .'v'. s:tskelPattern .'/'. escape(repl, '/')
+                " silent exec 's/\%'. col .'v'. s:tskelPattern .'/'. escape(repl, '/')
+                silent exec 's/\%'. col .'c'. s:tskelPattern .'/'. escape(repl, '/')
             endif
             if s:tskelPostExpand != ""
                 exec s:tskelPostExpand
@@ -1310,9 +1312,14 @@ fun! <SID>BitMenuEligible(agent, bit, mode, ft) "{{{3
 endf
 
 fun! <SID>BitMenu_query(bit, mode, ft) "{{{3
+    let s:tskelQueryN   = 0
     let s:tskelQueryAcc = <SID>BitMenuEligible('query', a:bit, a:mode, a:ft)
-    let qu = "s:tskelQueryAcc|Select bit:"
-    let rv = <SID>Query(qu)
+    if s:tskelQueryAcc <= 1
+        let rv = s:tskelQueryAcc
+    else
+        let qu = "s:tskelQueryAcc|Select bit:"
+        let rv = <SID>Query(qu)
+    endif
     if rv != ''
         call TSkeletonBit(rv, a:mode .'p')
         return 1
@@ -1322,6 +1329,7 @@ endf
 
 fun! <SID>BitMenuEligible_query_cb(bit, mode) "{{{3
     if a:bit =~ '\S' && a:bit =~ s:tskelMenuEligibleRx
+        let s:tskelQueryN = s:tskelQueryN + 1
         return escape(DecodeURL(a:bit), '"\ 	')
     endif
     return ''
@@ -1724,4 +1732,10 @@ finish
 "   automatically.
 " - Set g:tskelQueryType to 'popup' only if gui is win32 or gtk.
 " - Minor tweak for vim 7.0 compatibility
+" 
+" 2.2
+" - Don't display query menu, when there is only one eligible bit
+" - EncodeURL.vim now correctly en/decoded urls
+" - UTF8 compatibility -- use col() instead of virtcol() (thanks to Elliot 
+"   Shank)
 "
