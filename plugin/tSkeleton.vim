@@ -2,13 +2,14 @@
 " @Author:      Thomas Link (samul AT web.de)
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     21-Sep-2004.
-" @Last Change: 23-Sep-2006.
-" @Revision:    2.2.1649
+" @Last Change: 04-Okt-2006.
+" @Revision:    2.3.1697
 "
 " vimscript #1160
 " http://www.vim.org/scripts/script.php?script_id=1160
 "
 " TODO:
+" - Minibits defined in map files insert a superfluous carriage return
 " - <form in php mode funktioniert nicht
 " - ADD: make use of vim7 omnicompletion (or of its new popup menu for 
 "   g:tskelQueryType)
@@ -29,7 +30,7 @@
 if &cp || exists("loaded_tskeleton") "{{{2
     finish
 endif
-let loaded_tskeleton = 202
+let loaded_tskeleton = 203
 
 if !exists('loaded_genutils') "{{{2
     runtime plugin/genutils.vim
@@ -883,8 +884,8 @@ fun! <SID>PrepareBits(...) "{{{3
     if filetype == ''
         return
     endif
-    let bg = <SID>GetBitGroup(filetype)
     let reset = a:0 >= 2 ? a:2 : 0
+    let bg = <SID>GetBitGroup(filetype)
     let init  = <SID>Collect(bg, "<SID>PrepareBits4Type(\"%s\", 0)") =~ '0'
     let did_maps = 0
     if reset || init
@@ -1201,6 +1202,9 @@ endf
 fun! <SID>SelectBitForMode(type, bit) "{{{3
     if a:type == '' || a:bit == ''
         return 0
+    elseif !exists('g:tskelBitFiles_'. a:type)
+        echoerr 'tSkeleton: No filetype'
+        return 0
     else
         let ffbits = "\n". g:tskelBitFiles_{a:type} ."\n"
         let bit    = <SID>BitRx(a:bit, 0)
@@ -1214,7 +1218,7 @@ fun! <SID>SelectBitForMode(type, bit) "{{{3
                 return g:tskelBitsDir . a:type ."/". ffbit
             endif
         endif
-        return ""
+        return ''
     endif
 endf
 
@@ -1244,11 +1248,29 @@ fun! <SID>SelectAndInsert(bit, mode) "{{{3
     return 0
 endf
 
+if loaded_genutils >= 200
+    fun! <SID>SaveWindowSettings()
+        call genutils#SaveWindowSettings2('tSkeleton', 1)
+    endf
+    
+    fun! <SID>RestoreWindowSettings()
+        call genutils#RestoreWindowSettings2('tSkeleton')
+    endf
+else
+    fun! <SID>SaveWindowSettings()
+        call SaveWindowSettings2('tSkeleton', 1)
+    endf
+    
+    fun! <SID>RestoreWindowSettings()
+        call RestoreWindowSettings2('tSkeleton')
+    endf
+endif
+
 " TSkeletonBit(bit, ?mode='n')
 fun! TSkeletonBit(bit, ...) "{{{3
     let mode = a:0 >= 1 ? a:1 : 'n'
     let processing = <SID>SetProcessing()
-    call SaveWindowSettings2('tSkeleton', 1)
+    call <SID>SaveWindowSettings()
     try
         if <SID>SelectAndInsert(a:bit, mode)
             return 1
@@ -1269,7 +1291,7 @@ fun! TSkeletonBit(bit, ...) "{{{3
         " catch
         "     echom "An error occurred in TSkeletonBit() ... ignored"
     finally
-        call RestoreWindowSettings2('tSkeleton')
+        call <SID>RestoreWindowSettings()
         call <SID>SetProcessing(processing)
     endtry
 endf
@@ -1370,6 +1392,8 @@ endf
 
 " TSkeletonExpandBitUnderCursor(mode, ?bit)
 fun! TSkeletonExpandBitUnderCursor(mode, ...) "{{{3
+    let bit     = a:0 >= 1 ? a:1 : ''
+    let default = a:0 >= 2 ? a:2 : ''
     call <SID>PrepareBits()
     let t = @t
     let lazyredraw = &lazyredraw
@@ -1392,8 +1416,8 @@ fun! TSkeletonExpandBitUnderCursor(mode, ...) "{{{3
             let eol_adjustment = (col + 1 >= col('$'))
         endif
         let mode  = a:mode . eol_adjustment
-        if a:0 >= 1
-            let @t = a:1
+        if bit != ''
+            let @t = bit
         else
             let c = l[col - 1]
             let pos = '\%#'
@@ -1427,18 +1451,32 @@ fun! TSkeletonExpandBitUnderCursor(mode, ...) "{{{3
         if bit != '' && TSkeletonBit(bit, mode) == 1
             return 1
         elseif <SID>BitMenu(bit, mode, ft)
+            return <SID>InsertDefault(mode, bit, default)
+        endif
+        if <SID>InsertDefault(mode, bit, default)
+            return 1
+        else
+            " silent norm! u
+            let @t = bit
+            call <SID>InsertTReg(mode)
+            echom "TSkeletonBit: Unknown bit '". bit ."'"
             return 0
         endif
-        " silent norm! u
-        let @t = bit
-        call <SID>InsertTReg(mode)
-        echom "TSkeletonBit: Unknown bit '". bit ."'"
-        return 0
     finally
         let @t = t
         call <SID>UnsetLine()
         let lazyredraw  = &lazyredraw
     endtry
+endf
+
+fun! <SID>InsertDefault(mode, bit, default)
+    if a:default != ''
+        let @t = a:bit . a:default
+        call <SID>InsertTReg(a:mode)
+        return 1
+    else
+        return 0
+    endif
 endf
 
 fun! TSkeletonSetCursorPosition() "{{{3
@@ -1449,8 +1487,8 @@ endf
 if !hasmapto("TSkeletonExpandBitUnderCursor") "{{{2
     exec "nnoremap <unique> ". g:tskelMapLeader ."# :call TSkeletonExpandBitUnderCursor('n')<cr>"
     exec "inoremap <unique> ". g:tskelMapInsert ." <c-r>=TSkeletonSetCursorPosition()<cr><c-o>:call TSkeletonExpandBitUnderCursor('i')<cr>"
+    " inoremap <unique> <silent> <Space> <c-r>=TSkeletonSetCursorPosition()<cr><c-o>:call TSkeletonExpandBitUnderCursor('i', '', ' ')<cr>
 endif
-
 
 fun! TSkeletonGoToNextTag() "{{{3
     let rx = '\(???\|+++\|###\|<+.\{-}+>\)'
@@ -1621,121 +1659,130 @@ if !s:tskelDidSetup "{{{2
         autocmd FileType bib if !hasmapto(":TSkeletonCleanUpBibEntry") | exec "noremap <buffer> ". g:tskelMapLeader ."c :TSkeletonCleanUpBibEntry<cr>" | endif
     augroup END
                 
+    call <SID>PrepareBits('general')
+
     let s:tskelDidSetup = 1
 endif
 
 finish
 -------------------------------------------------------------------
-" 1.0
-" - Initial release
-" 
-" 1.1
-" - User-defined tags
-" - Modifiers <+NAME:MODIFIERS+> (c=capitalize, u=toupper, l=tolower, 
-"   s//=substitute)
-" - Skeleton bits
-" - the default markup for tags has changed to <+TAG+> (for 
-"   "compatibility" with imaps.vim), the cursor position is marked as 
-"   <+CURSOR+> (but this can be changed by setting g:tskelPatternLeft, 
-"   g:tskelPatternRight, and g:tskelPatternCursor)
-" - in the not so simple mode, skeleton bits can contain vim code that 
-"   is evaluated after expanding the template tags (see 
-"   .../skeletons/bits/vim/if for an example)
-" - function TSkeletonExpandBitUnderCursor(), which is mapped to 
-"   <Leader>#
-" - utility function: TSkeletonIncreaseRevisionNumber()
-" 
-" 1.2
-" - new pseudo tags: bit (recursive code skeletons), call (insert 
-"   function result)
-" - before & after sections in bit definitions may contain function 
-"   definitions
-" - fixed: no bit name given in <SID>SelectBit()
-" - don't use ={motion} to indent text, but simply shift it
-" 
-" 1.3
-" - TSkeletonCleanUpBibEntry (mapped to <Leader>tc for bib files)
-" - complete set of bibtex entries
-" - fixed problem with [&bg]: tags
-" - fixed typo that caused some slowdown
-" - other bug fixes
-" - a query must be enclosed in question marks as in <+?Which ID?+>
-" - the "test_tSkeleton" skeleton can be used to test if tSkeleton is 
-"   working
-" - and: after/before blocks must not contain function definitions
-" 
-" 1.4
-" - Popup menu with possible completions if 
-"   TSkeletonExpandBitUnderCursor() is called for an unknown code 
-"   skeleton (if there is only one possible completion, this one is 
-"   automatically selected)
-" - Make sure not to change the alternate file and not to distort the 
-"   window layout
-" - require genutils
-" - Syntax highlighting for code skeletons
-" - Skeleton bits can now be expanded anywhere in the line. This makes 
-"   it possible to sensibly use small bits like date or time.
-" - Minor adjustments
-" - g:tskelMapLeader for easy customization of key mapping (changed the 
-"   map leader to "<Leader>#" in order to avoid a conflict with Align; 
-"   set g:tskelMapLeader to "<Leader>t" to get the old mappings)
-" - Utility function: TSkeletonGoToNextTag(); imaps.vim like key 
-"   bindings via TSkeletonMapGoToNextTag()
-" 
-" 1.5
-" - Menu of small skeleton "bits"
-" - TSkeletonLateExpand() (mapped to <Leader>#x)
-" - Disabled <Leader># mapping (use it as a prefix only)
-" - Fixed copy & paste error (loaded_genutils)
-" - g:tskelDir defaults to $HOME ."/vimfiles/skeletons/" on Win32
-" - Some speed-up
-" 
-" 2.0
-" - You can define "groups of bits" (e.g. in php mode, all html bits are 
-"   available too)
-" - context sensitive expansions (only very few examples yet); this 
-"   causes some slowdown; if it is too slow, delete the files in 
-"   .vim/skeletons/map/
-" - one-line "mini bits" defined in either 
-"   ./vim/skeletons/bits/{&filetype}.txt or in $PWD/.tskelmini
-" - Added a few LaTeX, HTML and many Viki skeleton bits
-" - Added EncodeURL.vim
-" - Hierarchical bits menu by calling a bit "SUBMENU.BITNAME" (the 
-"   "namespace" is flat though; the prefix has no effect on the bit 
-"   name; see the "bib" directory for an example)
-" - the bit file may have an ampersand (&) in their names to define the 
-"   keyboard shortcut
-" - Some special characters in bit names may be encoded as hex (%XX as 
-"   in URLs)
-" - Insert mode: map g:tskelMapInsert ('<c-\><c-\>', which happens to be 
-"   the <c-#> key on a German qwertz keyboard) to 
-"   TSkeletonExpandBitUnderCursor()
-" - New <tskel:msg> tag in skeleton bits
-" - g:tskelKeyword_{&filetype} variable to define keywords by regexp 
-"   (when 'iskeyword' isn't flexible enough)
-" - removed the g:tskelSimpleBits option
-" - Fixed some problems with the menu
-" - Less use of globpath()
-" 
-" 2.1
-" - Don't accidentally remove torn off menus; rebuild the menu less 
-"   often
-" - Maintain insert mode (don't switch back to normal mode) in 
-"   <c-\><c-\> imap
-" - If no menu support is available, use the <SID>Query function to let 
-"   the user select among eligible bits (see also g:tskelQueryType)
-" - Create a normal and an insert mode menu
-" - Fixed selection of eligible bits
-" - Ensure that g:tskelDir ends with a (back)slash
-" - Search for 'skeletons/' in &runtimepath & set g:tskelDir accordingly
-" - If a template is named "#.suffix", an autocmd is created  
-"   automatically.
-" - Set g:tskelQueryType to 'popup' only if gui is win32 or gtk.
-" - Minor tweak for vim 7.0 compatibility
-" 
-" 2.2
-" - Don't display query menu, when there is only one eligible bit
-" - EncodeURL.vim now correctly en/decoded urls
-" - UTF8 compatibility -- use col() instead of virtcol() (thanks to Elliot 
-"   Shank)
-"
+1.0
+- Initial release
+
+1.1
+- User-defined tags
+- Modifiers <+NAME:MODIFIERS+> (c=capitalize, u=toupper, l=tolower, 
+  s//=substitute)
+- Skeleton bits
+- the default markup for tags has changed to <+TAG+> (for 
+  "compatibility" with imaps.vim), the cursor position is marked as 
+  <+CURSOR+> (but this can be changed by setting g:tskelPatternLeft, 
+  g:tskelPatternRight, and g:tskelPatternCursor)
+- in the not so simple mode, skeleton bits can contain vim code that 
+  is evaluated after expanding the template tags (see 
+  .../skeletons/bits/vim/if for an example)
+- function TSkeletonExpandBitUnderCursor(), which is mapped to 
+  <Leader>#
+- utility function: TSkeletonIncreaseRevisionNumber()
+
+1.2
+- new pseudo tags: bit (recursive code skeletons), call (insert 
+  function result)
+- before & after sections in bit definitions may contain function 
+  definitions
+- fixed: no bit name given in <SID>SelectBit()
+- don't use ={motion} to indent text, but simply shift it
+
+1.3
+- TSkeletonCleanUpBibEntry (mapped to <Leader>tc for bib files)
+- complete set of bibtex entries
+- fixed problem with [&bg]: tags
+- fixed typo that caused some slowdown
+- other bug fixes
+- a query must be enclosed in question marks as in <+?Which ID?+>
+- the "test_tSkeleton" skeleton can be used to test if tSkeleton is 
+  working
+- and: after/before blocks must not contain function definitions
+
+1.4
+- Popup menu with possible completions if 
+  TSkeletonExpandBitUnderCursor() is called for an unknown code 
+  skeleton (if there is only one possible completion, this one is 
+  automatically selected)
+- Make sure not to change the alternate file and not to distort the 
+  window layout
+- require genutils
+- Syntax highlighting for code skeletons
+- Skeleton bits can now be expanded anywhere in the line. This makes 
+  it possible to sensibly use small bits like date or time.
+- Minor adjustments
+- g:tskelMapLeader for easy customization of key mapping (changed the 
+  map leader to "<Leader>#" in order to avoid a conflict with Align; 
+  set g:tskelMapLeader to "<Leader>t" to get the old mappings)
+- Utility function: TSkeletonGoToNextTag(); imaps.vim like key 
+  bindings via TSkeletonMapGoToNextTag()
+
+1.5
+- Menu of small skeleton "bits"
+- TSkeletonLateExpand() (mapped to <Leader>#x)
+- Disabled <Leader># mapping (use it as a prefix only)
+- Fixed copy & paste error (loaded_genutils)
+- g:tskelDir defaults to $HOME ."/vimfiles/skeletons/" on Win32
+- Some speed-up
+
+2.0
+- You can define "groups of bits" (e.g. in php mode, all html bits are 
+  available too)
+- context sensitive expansions (only very few examples yet); this 
+  causes some slowdown; if it is too slow, delete the files in 
+  .vim/skeletons/map/
+- one-line "mini bits" defined in either 
+  ./vim/skeletons/bits/{&filetype}.txt or in $PWD/.tskelmini
+- Added a few LaTeX, HTML and many Viki skeleton bits
+- Added EncodeURL.vim
+- Hierarchical bits menu by calling a bit "SUBMENU.BITNAME" (the 
+  "namespace" is flat though; the prefix has no effect on the bit 
+  name; see the "bib" directory for an example)
+- the bit file may have an ampersand (&) in their names to define the 
+  keyboard shortcut
+- Some special characters in bit names may be encoded as hex (%XX as 
+  in URLs)
+- Insert mode: map g:tskelMapInsert ('<c-\><c-\>', which happens to be 
+  the <c-#> key on a German qwertz keyboard) to 
+  TSkeletonExpandBitUnderCursor()
+- New <tskel:msg> tag in skeleton bits
+- g:tskelKeyword_{&filetype} variable to define keywords by regexp 
+  (when 'iskeyword' isn't flexible enough)
+- removed the g:tskelSimpleBits option
+- Fixed some problems with the menu
+- Less use of globpath()
+
+2.1
+- Don't accidentally remove torn off menus; rebuild the menu less 
+  often
+- Maintain insert mode (don't switch back to normal mode) in 
+  <c-\><c-\> imap
+- If no menu support is available, use the <SID>Query function to let 
+  the user select among eligible bits (see also g:tskelQueryType)
+- Create a normal and an insert mode menu
+- Fixed selection of eligible bits
+- Ensure that g:tskelDir ends with a (back)slash
+- Search for 'skeletons/' in &runtimepath & set g:tskelDir accordingly
+- If a template is named "#.suffix", an autocmd is created  
+  automatically.
+- Set g:tskelQueryType to 'popup' only if gui is win32 or gtk.
+- Minor tweak for vim 7.0 compatibility
+
+2.2
+- Don't display query menu, when there is only one eligible bit
+- EncodeURL.vim now correctly en/decoded urls
+- UTF8 compatibility -- use col() instead of virtcol() (thanks to Elliot 
+  Shank)
+
+2.3
+- Support for current versions of genutils (> 2.0)
+
+2.4
+- Preliminary support for using keys like <space> for insert mode 
+expansion.
+
