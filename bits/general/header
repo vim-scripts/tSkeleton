@@ -5,5 +5,5 @@ if exists("*TComment")|call TCommentAs(1, line("$"), "!", b:tskelFiletype)|endif
 @Author:      <+AUTHOR+> (<+EMAIL+>)
 @License:     <+LICENSE+>
 @Created:     <+DATE+>.
-@Last Change: 11-Mai-2006.
-@Revision:    0.0
+@Last Change: 14-Aug-2005.
+@Revision:    0.1

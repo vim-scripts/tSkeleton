@@ -26,3 +26,18 @@ Upper:                 <+AUTHOR:u+>
 CamelCase:             <+AUTHOR:C+>
 Substitute:            <+call:bufname("%"):s/[aeiou]/_/+>
 
+Copyright:    © <+call:strftime('%Y')+> <+AUTHOR+>
+Copyright:    ©<+DATE+> <+AUTHOR+> 
+
+Date	<+DATE+>
+Date
+	<+DATE+>
+/**
+ * \file <+FILE NAME+>
+ * \author <+AUTHOR+> <<+EMAIL+>>
+ * \par Created:
+ *      <+DATE+>
+ * \par Modified: 19.09.2006 20:54
+ *	<+DATE+>
+ */
+
