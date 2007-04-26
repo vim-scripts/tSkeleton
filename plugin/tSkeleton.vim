@@ -2,8 +2,8 @@
 " @Author:      Thomas Link (samul AT web.de)
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     21-Sep-2004.
-" @Last Change: 2007-04-24.
-" @Revision:    3.0.2807
+" @Last Change: 2007-04-26.
+" @Revision:    3.1.2864
 "
 " vimscript #1160
 " http://www.vim.org/scripts/script.php?script_id=1160
@@ -33,18 +33,18 @@ if v:version < 700 "{{{2
     echoerr "tSkeleton >= 3.0 requires Vim >= 7"
     finish
 endif
-if !exists('loaded_tlib')
-    echoerr "tSkeleton requires tlib"
+if !exists('loaded_tlib') || loaded_tlib < 3
+    echoerr "tSkeleton requires tlib >= 0.3"
     finish
 endif
 if !exists('loaded_genutils') "{{{2
     runtime plugin/genutils.vim
-    if !exists('loaded_genutils')
-        echoerr "tSkeleton: genutils (vimscript #197) is required"
+    if !exists('loaded_genutils') || loaded_genutils < 203
+        echoerr "tSkeleton: genutils (vimscript #197) >= 2.3 is required"
         finish
     endif
 endif
-let loaded_tskeleton = 300
+let loaded_tskeleton = 301
 
 if !exists(':TAssert') "{{{2
     command! -nargs=* -bang TAssert :
@@ -98,6 +98,12 @@ if !exists("g:tskelMenuCache")      | let g:tskelMenuCache = '.tskelmenu'  | end
 if !exists("g:tskelMenuPriority")   | let g:tskelMenuPriority = 90         | endif "{{{2
 if !exists("g:tskelMenuMiniPrefix") | let g:tskelMenuMiniPrefix = 'etc.'   | endif "{{{2
 
+if !exists("g:tskelTypes") "{{{2
+    let g:tskelTypes = ['skeleton', 'tags', 'functions']
+endif
+
+if !exists("g:tskelMenuPrefix_tags") | let g:tskelMenuPrefix_tags = 'Tags.' | endif "{{{2
+
 if !exists("g:tskelQueryType") "{{{2
     " if has('gui_win32') || has('gui_win32s') || has('gui_gtk')
     "     let g:tskelQueryType = 'popup'
@@ -140,7 +146,9 @@ let s:tskelPattern     = g:tskelPatternLeft ."\\("
 fun! TSkeletonFillIn(bit, ...) "{{{3
     " try
         let b:tskelFiletype = a:0 >= 1 && a:1 != '' ? a:1 : ''
-        let ft = b:tskelFiletype != "" ? ", '". b:tskelFiletype ."'" : ""
+        " TLogVAR b:tskelFiletype
+        " let ft = b:tskelFiletype != "" ? ", '". b:tskelFiletype ."'" : ""
+        " TLogVAR ft
         call s:GetBitProcess('msg', 2)
         let before  = s:GetBitProcess('before', 1)
         let after   = s:GetBitProcess('after', 1)
@@ -427,8 +435,10 @@ endf
 
 " <+TBD+> Switch to minibits
 fun! s:Expand(bit, ...) "{{{3
+    " TLogVAR a:bit
     let ft = a:0 >= 1 && a:0 != '' ? a:1 : &filetype
-    " TLogDBG 'a:bit='. a:bit .' ft='. ft
+    " TLogVAR ft
+    " TLogVAR b:tskelFiletype
     call s:PrepareBits(ft)
     let t = @t
     try
@@ -444,6 +454,8 @@ fun! s:Expand(bit, ...) "{{{3
         " TLogDBG 'name='. name .' default='. default
         " let bit    = get(g:tskelBits_{ft}, name, {})
         let bit    = get(b:tskelBitDefs, name, {})
+        " TLogVAR bit
+        " TLogDBG string(keys(b:tskelBitDefs))
         let indent = s:GetIndent(getline('.'))
         " TLogDBG 'bit='. string(bit) .' indent='. indent
         if !empty(bit)
@@ -1009,8 +1021,8 @@ fun! s:PrepareFiletype(filetype, reset)
     " TLogDBG 'ft_done='.ft_done
     if !ft_done || a:reset
         let g:tskelBits_{a:filetype} = {}
-        let fns = s:CollectFunctions('^TSkelFiletypeBits_\a\+$')
-                    \ + s:CollectFunctions('^TSkelFiletypeBits_\a\+_'. a:filetype .'$')
+        let fns = s:CollectFunctions('^TSkelFiletypeBits_%s\+$')
+                    \ + s:CollectFunctions('^TSkelFiletypeBits_%s\+_'. a:filetype .'$')
         for fn in fns
             " TLogDBG 'PrepareFiletype '.fn
             call {fn}(g:tskelBits_{a:filetype}, a:filetype)
@@ -1022,8 +1034,8 @@ endf
 fun! s:PrepareBuffer(filetype)
     " TLogDBG bufname('%')
     call s:InitBufferMenu()
-    let fns = s:CollectFunctions('^TSkelBufferBits_\a\+$')
-                \ + s:CollectFunctions('^TSkelBufferBits_\a\+_'. a:filetype .'$')
+    let fns = s:CollectFunctions('^TSkelBufferBits_%s\+$')
+                \ + s:CollectFunctions('^TSkelBufferBits_%s\+_'. a:filetype .'$')
     for fn in fns
         " TLogDBG 'PrepareBuffer '.fn
         call {fn}(b:tskelBitDefs, a:filetype)
@@ -1057,8 +1069,8 @@ fun! s:ReplacePrototypeArgs(text, rest)
     endif
 endf
 
-if !exists('*TSkelFiletypeBits_prototypes_vim')
-    fun! TSkelFiletypeBits_prototypes_vim(dict, filetype) "{{{3
+if !exists('*TSkelFiletypeBits_functions_vim')
+    fun! TSkelFiletypeBits_functions_vim(dict, filetype) "{{{3
         " TAssert IsDictionary(a:dict)
         " TAssert IsString(a:filetype)
         redir => fns
@@ -1084,6 +1096,18 @@ endf
 
 let s:tag_defs = {}
 
+fun! s:SortBySource(a, b)
+    let ta = s:sort_tag_defs[a:a]
+    let tb = s:sort_tag_defs[a:b]
+    let fa = ta.source
+    let fb = tb.source
+    if fa == fb
+        return ta.menu == tb.menu ? 0 : ta.menu > tb.menu ? 1 : -1
+    else
+        return fa > fb ? 1 : -1
+    endif
+endf
+
 fun! TSkelBufferBits_tags(dict, filetype) "{{{3
     " TAssert IsDictionary(a:dict)
     " TAssert IsString(a:filetype)
@@ -1097,14 +1121,21 @@ fun! TSkelBufferBits_tags(dict, filetype) "{{{3
                 call sort(tags, 's:SortByFilename')
                 call filter(tags, 'TSkelProcessTag_{a:filetype}(tag_defs, v:val)')
                 let s:tag_defs[td_id] = tag_defs
+                echo
+                redraw
             endif
             call extend(a:dict, tag_defs, 'keep')
-            call filter(keys(tag_defs), 's:NewBufferMenuItem(b:tskelBufferMenu, v:val, 10)')
+            let menu_prefix = tlib#GetValue('tskelMenuPrefix_tags', 'bg')
+            if !empty(menu_prefix)
+                let s:sort_tag_defs = tag_defs
+                let tagnames = sort(keys(tag_defs), 's:SortBySource')
+                call filter(tagnames, 's:NewBufferMenuItem(b:tskelBufferMenu, v:val, 10)')
+            endif
         endif
     endif
 endf
 
-fun! TSkelProcessTag_ruby(dict, tag)
+fun! TSkelProcessTag_functions_with_parentheses(dict, tag, restargs)
     if a:tag['kind'] == 'f'
         let source0 = fnamemodify(a:tag['filename'], ':p')
         " let source  = substitute(source0, '\V\c\^'. escape(expand('%:p:h'), '\'), '', '')
@@ -1122,13 +1153,19 @@ fun! TSkelProcessTag_ruby(dict, tag)
                 let bname = bname0 . source
             endif
         endif
-        let smenu  = join(map(split(source, '[\/]'), 'escape(v:val, ". ")'), '.')
-        let mname  = 'Method.'. smenu .'.'. escape(bname, '. ')
         if !empty(args)
-            let xname .= s:ReplacePrototypeArgs(args, '\*\a\+\s*$')
+            let xname .= s:ReplacePrototypeArgs(args, a:restargs)
         endif
-        " TLogDBG xname .' -- '. xname
-        let a:dict[bname] = {'text': xname, 'menu': mname, 'source': source}
+        let a:dict[bname] = {'text': xname, 'source': source}
+        let menu_prefix = tlib#GetValue('tskelMenuPrefix_tags', 'bg')
+        if !empty(menu_prefix)
+            " let smenu  = join(map(split(source, '[\/]'), 'escape(v:val, ". ")'), '.')
+            " let mname  = 'Tag.'. smenu .'.'. escape(bname, '. ')
+            let smenu  = join(map(split(source, '[\/]'), 'escape(v:val, ".")'), '.')
+            let mname  = menu_prefix . smenu .'.'. escape(bname, '.')
+            " TLogDBG xname .' -- '. xname
+            let a:dict[bname]['menu'] = mname
+        endif
         return bname
     elseif a:tag['kind'] == 'c'
     elseif a:tag['kind'] == 'm'
@@ -1136,13 +1173,23 @@ fun! TSkelProcessTag_ruby(dict, tag)
     return ''
 endf
 
+fun! TSkelProcessTag_vim(dict, tag)
+    return TSkelProcessTag_functions_with_parentheses(a:dict, a:tag, '\V...')
+endf
+
+fun! TSkelProcessTag_ruby(dict, tag)
+    return TSkelProcessTag_functions_with_parentheses(a:dict, a:tag, '\*\a\+\s*$')
+endf
+
 fun! TSkelBufferBits_mini(dict, filetype)
     call s:FetchMiniBits(a:dict, expand('%:p:h') .'/.tskelmini', 1)
 endf
 
 fun! s:CollectFunctions(pattern)
+    let types   = '\('. join(tlib#GetValue('tskelTypes', 'bg'), '\|') .'\)'
+    let pattern = printf(a:pattern, types)
     redir => fns
-    silent exec 'function /'. a:pattern
+    silent exec 'function /'. pattern
     redir END
     let rv = map(split(fns, '\n'), 'matchstr(v:val, ''^\S\+\s\+\zs.\{-}\ze('')')
     call filter(rv, '!empty(v:val)')
@@ -1282,7 +1329,15 @@ fun! s:EditScratchBuffer(filetype, ...) "{{{3
         " let b:tskelScratchBuffer = 1
     endif
     silent norm! ggdG
-    let b:tskelFiletype = a:filetype
+    " TLogVAR a:filetype
+    if !exists('b:tskelFiletype') || b:tskelFiletype != a:filetype
+        let b:tskelFiletype = a:filetype
+        " TLogVAR b:tskelFiletype
+        if exists('b:tskelBitDefs')
+            unlet b:tskelBitDefs
+        endif
+        call s:PrepareBits(a:filetype)
+    endif
     if exists('*TSkelNewScratchHook_'. a:filetype)
         call TSkelNewScratchHook_{a:filetype}()
     endif
@@ -2091,12 +2146,12 @@ move the cursor one char to the left before searching for the next tag
 
 3.0
 - Partial rewrite for vim7 (drop vim6 support)
-- Now depends on tlib (vimscript #)
+- Now depends on tlib (vimscript #1863)
 - "query" now uses a more sophisticated version from autoload/tlib.vim
 - The default value for g:tskelQueryType is "query".
 - Experimental (proof of concept) code completion for vim script 
 (already sourced user-defined functions only). Use :delf 
-TSkelFiletypeBits_prototypes_vim to disable this as it can take some 
+TSkelFiletypeBits_functions_vim to disable this as it can take some 
 time on initialization.
 - Experimental (proof of concept) tags-based code completion for ruby.  
 Use :delf TSkelProcessTag_ruby to disable this. It's only partially 
@@ -2117,6 +2172,10 @@ skeleton bits.
 - FIX: Minibits are now properly displayed in the menu.
 
 3.1
+- Tag-based code completion for vim
+- Made the supported skeleton types configurable via g:tskelTypes
+- FIX: Tag-based skeletons the name of which contain blanks
+- FIX: Undid shortcut that prevented the <+bit:+> tag from working
 - Preliminary support for using keys like <space> for insert mode 
 expansion.
 
