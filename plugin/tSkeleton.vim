@@ -2,8 +2,8 @@
 " @Author:      Thomas Link (samul AT web.de)
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     21-Sep-2004.
-" @Last Change: 2007-05-13.
-" @Revision:    3.2.3277
+" @Last Change: 2007-05-18.
+" @Revision:    3.3.3324
 "
 " vimscript #1160
 " http://www.vim.org/scripts/script.php?script_id=1160
@@ -41,7 +41,7 @@ if !exists('loaded_genutils')
         finish
     endif
 endif
-let loaded_tskeleton = 302
+let loaded_tskeleton = 303
 
 if !exists(':TAssert') "{{{2
     command! -nargs=* -bang TAssert :
@@ -146,10 +146,13 @@ function! TSkeletonFillIn(bit, ...) "{{{3
         let ft = a:0 >= 1 && a:1 != '' ? a:1 : ''
         " TLogVAR ft
         call s:PrepareBits(ft)
-        " TLogDBG string(getline(1, '$'))
-        let bitdef = get(b:tskelBitDefs, a:bit, {})
-        " TLogVAR bitdef
-        let meta = get(bitdef, 'meta', {})
+        if a:0 >= 2
+            let meta = a:2
+        else
+            let bitdef = get(b:tskelBitDefs, a:bit, {})
+            " TLogVAR bitdef
+            let meta = get(bitdef, 'meta', {})
+        endif
         " TLogVAR meta
         if !empty(meta)
             let msg = get(meta, 'msg', '')
@@ -212,6 +215,7 @@ function! TSkeletonFillIn(bit, ...) "{{{3
 endf
 
 function! s:ExtractMeta(text)
+    " TLogVAR a:text
     let meta = {}
     let [text, meta.msg]         = s:GetBitProcess(a:text, 'msg', 2)
     let [text, meta.before]      = s:GetBitProcess(text, 'before', 1)
@@ -317,7 +321,7 @@ function! s:Var(arg) "{{{3
     if exists(a:arg)
         exec 'return '.a:arg
     else
-        return TSkeletonEvalInDestBuffer(a:arg)
+        return TSkeletonEvalInDestBuffer(printf('exists("%s") ? %s : "%s"', a:arg, a:arg, a:arg))
     endif
 endf
 
@@ -389,6 +393,7 @@ endf
 function! s:GetBitProcess(text, name, global) "{{{3
     let s:tskelGetBit = ''
     let text = substitute(a:text, '^\s*<tskel:'. a:name .'>\s*\n\(\(.\{-}\n\)\{-}\)\s*<\/tskel:'. a:name .'>\s*\n', '\=s:SaveBitProcess("'. a:name .'", submatch(1), '. a:global .')', '')
+    " call TLogDBG(s:tskelGetBit)
     return [text, s:tskelGetBit]
 endf
 
@@ -617,8 +622,8 @@ function! TSkeletonSetup(template, ...) "{{{3
             echoerr 'Unknown skeleton: '. a:template
             return
         endif
-        call s:Read0(tf)
-        call TSkeletonFillIn('', &filetype)
+        let meta = s:ReadSkeleton(tf)
+        call TSkeletonFillIn('', &filetype, meta)
         if g:tskelChangeDir
             let cd = substitute(expand('%:p:h'), '\', '/', 'g')
             let cd = substitute(cd, '//\+', '/', 'g')
@@ -648,6 +653,21 @@ function! TSkeletonSelectTemplate(ArgLead, CmdLine, CursorPos) "{{{3
     endif
 endf
 
+function! TSkeletonEditBitCompletion(ArgLead, CmdLine, CursorPos) "{{{3
+    if a:CmdLine =~ '^.\{-}\s\+.\{-}\s'
+        return []
+    elseif exists('b:tskelBitDefs')
+        let bits  = filter(copy(b:tskelBitDefs), 'has_key(v:val, "bitfile")')
+        let bits  = map(bits, 'tlib#RelativeFilename(v:val["bitfile"], g:tskelBitsDir)')
+        let bvals = values(bits)
+        if !empty(a:ArgLead)
+            call filter(bvals, 'v:val =~ ''\V\^''. escape(a:ArgLead, ''\'')')
+        endif
+        return bvals
+    endif
+    return []
+endf
+
 command! -nargs=* -complete=custom,TSkeletonSelectTemplate TSkeletonSetup 
             \ call TSkeletonSetup(<f-args>)
 
@@ -662,11 +682,19 @@ endf
 function! TSkeletonEdit(...) "{{{3
     let tpl = a:0 >= 1 && !empty(a:1) ? a:1 : s:TSkeletonBrowse(0, "Template", g:tskelDir, "")
     if !empty(tpl)
-        exe 'edit '. g:tskelDir . tpl
+        exe 'edit '. tlib#ExArg(g:tskelDir . tpl)
     end
 endf
 command! -nargs=? -complete=custom,TSkeletonSelectTemplate TSkeletonEdit 
             \ call TSkeletonEdit(<q-args>)
+
+function! TSkeletonEditBit(bit) "{{{3
+    if !empty(a:bit)
+        exe 'edit '. tlib#ExArg(g:tskelBitsDir. a:bit)
+    end
+endf
+command! -nargs=? -complete=customlist,TSkeletonEditBitCompletion TSkeletonEditBit 
+            \ call TSkeletonEditBit(<q-args>)
 
 " TSkeletonNewFile(?template, ?dir, ?fileName)
 function! TSkeletonNewFile(...) "{{{3
@@ -1163,12 +1191,13 @@ function! TSkelFiletypeBits_skeleton(dict, type) "{{{3
     call s:FetchMiniBits(a:dict, g:tskelBitsDir . a:type .'.txt', 0)
     let bf = s:GlobBits(g:tskelBitsDir . a:type .'/', 2)
     for f in bf
+        " TLogVAR f
         if !isdirectory(f) && filereadable(f)
             let bb = tlib#DecodeURL(fnamemodify(f, ":t"))
             let bn = s:PurifyBit(bb)
             let bt = join(readfile(f), "\n")
             let [bt, meta] = s:ExtractMeta(bt)
-            let a:dict[bn] = {'text': bt, 'menu': bb, 'meta': meta}
+            let a:dict[bn] = {'text': bt, 'menu': bb, 'meta': meta, 'bitfile': f}
         endif
     endfor
 endf
@@ -1326,9 +1355,12 @@ function! s:ReadFile(filename) "{{{3
     return ''
 endf
 
-function! s:Read0(filename) "{{{3
-    call append(0, readfile(a:filename))
-    norm! Gdd
+function! s:ReadSkeleton(filename) "{{{3
+    let lines = readfile(a:filename)
+    let [text, meta] = s:ExtractMeta(join(lines, "\n"))
+    call append(0, split(text, '\n'))
+    " norm! Gdd
+    return meta
 endf
 
 function! s:PrepareFiletypeMap(type, anyway) "{{{3
@@ -2308,4 +2340,8 @@ you'll have to move the templates, if any, to ~/.vim/skeletons
 - Moved functions from EncodeURL.vim to tlib.vim
 - Updated the manual
 - Renamed the skeletons/menu subdirectory to skeletons/cache_menu
+
+3.3
+- New :TSkeletonEditBit command
+- FIX: Embedded <tskel> tags in file templates didn't work
 

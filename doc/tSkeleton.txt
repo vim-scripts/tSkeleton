@@ -6,6 +6,12 @@ Author: Thomas Link, samul AT web.de
                                                     *tSkeleton-install*
 Install~
 
+Edit the vba file and type:
+
+    :so %
+
+See :help vimball for details.
+
 If you don't already have some skeletons, you may want to download 
 tSkeleton-Samples.zip from:
 
@@ -19,8 +25,6 @@ look like this:
         FILE TEMPLATES ...
         map/
             MAP FILES FOR CONDITIONAL EXPANSION
-        menu/
-            AUTO-GENERATED MENU CACHE
         bits/
             &filetype.txt (single line templates)
             general/
@@ -338,7 +342,7 @@ Utilities~
 The function TSkeletonIncreaseRevisionNumber() provides a way to 
 automatically update a revision number in the form >
 
-    @Revision: 1.0.203
+    @Revision: 1.0.204
 
 In order to use this function, add something like this to your |vimrc| 
 file: >
