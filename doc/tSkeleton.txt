@@ -1,6 +1,6 @@
 *tSkeleton.txt*              tSkeleton -- File Templates and Code Skeletons
 
-Author: Thomas Link, samul AT web.de
+Author: Thomas Link, micathom AT gmail com?subject=vim
 
 tSkeleton provides file templates and code skeletons (snippets). These 
 templates may contain special tags that are replaced with some computed 
@@ -357,7 +357,7 @@ Utilities~
 The function TSkeletonIncreaseRevisionNumber() provides a way to 
 automatically update a revision number in the form >
 
-    @Revision: 1.0.211
+    @Revision: 1.0.212
 
 In order to use this function, add something like this to your |vimrc| 
 file: >
