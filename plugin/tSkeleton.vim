@@ -2,35 +2,35 @@
 " @Author:      Thomas Link (micathom AT gmail com?subject=vim)
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     21-Sep-2004.
-" @Last Change: 2007-09-06.
-" @Revision:    4.0.3597
+" @Last Change: 2007-09-19.
+" @Revision:    4.1.3719
 "
 " GetLatestVimScripts: 1160 1 tSkeleton.vim
 " http://www.vim.org/scripts/script.php?script_id=1160
 "
 " TODO:
-" - <form in php mode funktioniert nicht
-" - FIX: No popup menu when nothing is selected in insert mode & cursor 
-"   at last position (bibtex mode)
+" - When bits change, opened hidden buffer don't get updated it seems.
+" - Enable multiple skeleton directories (and maybe other sources like 
+"   DBs).
+" - <form in php mode doesn't work (probably a keyword-thing)
 " - ADD: More latex & html bits
 " - ADD: <tskel:post> embedded tag (evaluate some vim code on the visual 
 "   region covering the final expansion)
 " - FIX: The \section bit either moves the cursor after the closing 
 "   curly brace or (when applying some correction) before the opening 
-"   CB. This is very confusing.
+"   CB. This is very confusing. I assume it's caused by some bracket 
+"   matching thingy.
+
 
 if &cp || exists("loaded_tskeleton") "{{{2
     finish
 endif
-if !exists('loaded_tlib') || loaded_tlib < 11
-    echoerr "tSkeleton requires tlib >= 0.11"
+if !exists('loaded_tlib') || loaded_tlib < 14
+    echoerr "tSkeleton requires tlib >= 0.14"
     finish
 endif
-if !exists('loaded_genutils') || loaded_genutils < 203
-    echoerr 'genutils (vimscript #197) >= 2.3 is required'
-    finish
-endif
-let loaded_tskeleton = 400
+let loaded_tskeleton = 401
+
 
 if !exists("g:tskelDir") "{{{2
     let g:tskelDir = get(split(globpath(&rtp, 'skeletons/'), '\n'), 0, '')
@@ -41,8 +41,26 @@ if !isdirectory(g:tskelDir) "{{{2
 endif
 let g:tskelDir = tlib#dir#CanonicName(g:tskelDir)
 
-let g:tskelBitsDir = g:tskelDir .'bits/'
-call tlib#dir#Ensure(g:tskelBitsDir)
+
+if !exists('g:tskelMapsDir') "{{{2
+    let g:tskelMapsDir = g:tskelDir .'map/'
+endif
+let g:tskelMapsDir = tlib#dir#CanonicName(g:tskelDir)
+
+if !exists('g:tskelBitsDir') "{{{2
+    let g:tskelBitsDir = g:tskelDir .'bits/'
+    call tlib#dir#Ensure(g:tskelBitsDir)
+endif
+
+
+if !exists("g:tskelTypes") "{{{2
+    " 'skeleton' (standard tSkeleton functionality)
+    " 'abbreviations' (VIM abbreviations)
+    " 'functions' (VIM script functions extracted from :function)
+    " 'mini' ("mini" bits, one-liners etc.)
+    " 'tags' (tags-based code templates, requires ctags, I presume)
+    let g:tskelTypes = ['skeleton', 'mini', 'abbreviations']
+endif
 
 if !exists('g:tskelLicense') "{{{2
     let g:tskelLicense = 'GPL (see http://www.gnu.org/licenses/gpl.txt)'
@@ -52,14 +70,15 @@ if !exists("g:tskelMapLeader")     | let g:tskelMapLeader     = "<Leader>#"   | 
 if !exists("g:tskelMapInsert")     | let g:tskelMapInsert     = '<c-\><c-\>'  | endif "{{{2
 if !exists("g:tskelAddMapInsert")  | let g:tskelAddMapInsert  = 0             | endif "{{{2
 if !exists("g:tskelMarkerHiGroup") | let g:tskelMarkerHiGroup = 'Special'     | endif "{{{2
-if !exists("g:tskelMarkerLeft")    | let g:tskelMarkerLeft   = "<+"           | endif "{{{2
-if !exists("g:tskelMarkerRight")   | let g:tskelMarkerRight  = "+>"           | endif "{{{2
-if !exists("g:tskelMarkerCursor")  | let g:tskelMarkerCursor = g:tskelMarkerLeft."CURSOR".g:tskelMarkerRight  | endif "{{{2
+if !exists("g:tskelMarkerLeft")    | let g:tskelMarkerLeft    = "<+"           | endif "{{{2
+if !exists("g:tskelMarkerRight")   | let g:tskelMarkerRight   = "+>"           | endif "{{{2
+if !exists("g:tskelMarkerCursor_mark") | let g:tskelMarkerCursor_mark = "CURSOR"           | endif "{{{2
+if !exists("g:tskelMarkerCursor_rx")   | let g:tskelMarkerCursor_rx = 'CURSOR\(/\(.\{-}\)\)\?' | endif "{{{2
 if !exists("g:tskelDateFormat")    | let g:tskelDateFormat    = '%Y-%m-%d'    | endif "{{{2
-if !exists("g:tskelUserName")      | let g:tskelUserName      = "<+NAME+>"    | endif "{{{2
-if !exists("g:tskelUserAddr")      | let g:tskelUserAddr      = "<+ADDRESS+>" | endif "{{{2
-if !exists("g:tskelUserEmail")     | let g:tskelUserEmail     = "<+EMAIL+>"   | endif "{{{2
-if !exists("g:tskelUserWWW")       | let g:tskelUserWWW       = "<+WWW+>"     | endif "{{{2
+if !exists("g:tskelUserName")      | let g:tskelUserName      = g:tskelMarkerLeft."NAME".g:tskelMarkerRight    | endif "{{{2
+if !exists("g:tskelUserAddr")      | let g:tskelUserAddr      = g:tskelMarkerLeft."ADDRESS".g:tskelMarkerRight | endif "{{{2
+if !exists("g:tskelUserEmail")     | let g:tskelUserEmail     = g:tskelMarkerLeft."EMAIL".g:tskelMarkerRight   | endif "{{{2
+if !exists("g:tskelUserWWW")       | let g:tskelUserWWW       = g:tskelMarkerLeft."WWW".g:tskelMarkerRight     | endif "{{{2
 
 if !exists("g:tskelRevisionMarkerRx") | let g:tskelRevisionMarkerRx = '@Revision:\s\+' | endif "{{{2
 if !exists("g:tskelRevisionVerRx")    | let g:tskelRevisionVerRx = '\(RC\d*\|pre\d*\|p\d\+\|-\?\d\+\)\.' | endif "{{{2
@@ -76,14 +95,11 @@ if !exists("g:tskelMenuPrefix")     | let g:tskelMenuPrefix  = 'TSke&l'    | end
 if !exists("g:tskelMenuCache")      | let g:tskelMenuCache = '.tskelmenu'  | endif "{{{2
 if !exists("g:tskelMenuPriority")   | let g:tskelMenuPriority = 90         | endif "{{{2
 if !exists("g:tskelMenuMiniPrefix") | let g:tskelMenuMiniPrefix = 'etc.'   | endif "{{{2
+if !exists("g:tskelAutoAbbrevs")    | let g:tskelAutoAbbrevs = 1           | endif "{{{2
+if !exists("g:tskelAbbrevPostfix")  | let g:tskelAbbrevPostfix = '#'       | endif "{{{2
 
-if !exists("g:tskelUseBufferCache") | let g:tskelUseBufferCache = 1             | endif "{{{2
+if !exists("g:tskelUseBufferCache") | let g:tskelUseBufferCache = 0             | endif "{{{2
 if !exists("g:tskelBufferCacheDir") | let g:tskelBufferCacheDir = '.tskeleton'  | endif "{{{2
-
-if !exists("g:tskelTypes") "{{{2
-    " let g:tskelTypes = ['skeleton', 'tags', 'functions']
-    let g:tskelTypes = ['skeleton', 'mini']
-endif
 
 if !exists("g:tskelMenuPrefix_tags") | let g:tskelMenuPrefix_tags = 'Tags.' | endif "{{{2
 
@@ -107,10 +123,12 @@ if !exists("g:tskelKeyword_tex")  | let g:tskelKeyword_tex  = '\\\?\w\{-}'      
 if !exists("g:tskelKeyword_viki") | let g:tskelKeyword_viki = '\(#\|{\)\?[^#{[:blank:]]\{-}' | endif "{{{2
 
 if !exists("g:tskelBitGroup_php") "{{{2
-    let g:tskelBitGroup_php = ['php', 'html']
+    let g:tskelBitGroup_php  = ['php', 'html']
+    let g:tskelBitGroup_xslt = ['xslt', 'xml']
 endif
 
 let g:tskeleton_SetFiletype = 1
+
 
 if !exists('*TSkeleton_FILE_DIRNAME') "{{{2
     function! TSkeleton_FILE_DIRNAME() "{{{3
@@ -118,11 +136,13 @@ if !exists('*TSkeleton_FILE_DIRNAME') "{{{2
     endf
 endif
 
+
 if !exists('*TSkeleton_FILE_SUFFIX') "{{{2
     function! TSkeleton_FILE_SUFFIX() "{{{3
         return tskeleton#EvalInDestBuffer('expand("%:e")')
     endf
 endif
+
 
 if !exists('*TSkeleton_FILE_NAME_ROOT') "{{{2
     function! TSkeleton_FILE_NAME_ROOT() "{{{3
@@ -130,11 +150,13 @@ if !exists('*TSkeleton_FILE_NAME_ROOT') "{{{2
     endf
 endif
 
+
 if !exists('*TSkeleton_FILE_NAME') "{{{2
     function! TSkeleton_FILE_NAME() "{{{3
         return tskeleton#EvalInDestBuffer('expand("%:t")')
     endf
 endif
+
 
 if !exists('*TSkeleton_NOTE') "{{{2
     function! TSkeleton_NOTE() "{{{3
@@ -144,11 +166,13 @@ if !exists('*TSkeleton_NOTE') "{{{2
     endf
 endif
 
+
 if !exists('*TSkeleton_DATE') "{{{2
     function! TSkeleton_DATE() "{{{3
         return strftime(tskeleton#GetVar('tskelDateFormat'))
     endf
 endif
+
 
 if !exists('*TSkeleton_TIME') "{{{2
     function! TSkeleton_TIME() "{{{3
@@ -156,11 +180,13 @@ if !exists('*TSkeleton_TIME') "{{{2
     endf
 endif
 
+
 if !exists('*TSkeleton_AUTHOR') "{{{2
     function! TSkeleton_AUTHOR() "{{{3
         return tskeleton#GetVar('tskelUserName')
     endf
 endif
+
 
 if !exists('*TSkeleton_EMAIL') "{{{2
     function! TSkeleton_EMAIL() "{{{3
@@ -170,11 +196,13 @@ if !exists('*TSkeleton_EMAIL') "{{{2
     endf
 endif
 
+
 if !exists('*TSkeleton_WEBSITE') "{{{2
     function! TSkeleton_WEBSITE() "{{{3
         return tskeleton#GetVar('tskelUserWWW')
     endf
 endif
+
 
 if !exists('*TSkeleton_LICENSE') "{{{2
     function! TSkeleton_LICENSE() "{{{3
@@ -182,116 +210,21 @@ if !exists('*TSkeleton_LICENSE') "{{{2
     endf
 endif
 
+
 function! TSkeletonCB_FILENAME() "{{{3
     return input('File name: ', '', 'file')
 endf
+
 
 function! TSkeletonCB_DIRNAME() "{{{3
     return input('Directory name: ', '', 'dir')
 endf
 
-let s:tag_defs = {}
-
-function! s:SortBySource(a, b)
-    let ta = s:sort_tag_defs[a:a]
-    let tb = s:sort_tag_defs[a:b]
-    let fa = ta.source
-    let fb = tb.source
-    if fa == fb
-        return ta.menu == tb.menu ? 0 : ta.menu > tb.menu ? 1 : -1
-    else
-        return fa > fb ? 1 : -1
-    endif
-endf
-
-function! s:SortByFilename(tag1, tag2)
-    let f1 = a:tag1['filename']
-    let f2 = a:tag2['filename']
-    return f1 == f2 ? 0 : f1 > f2 ? 1 : -1
-endf
-
-function! TSkelFiletypeBits_skeleton(dict, type) "{{{3
-    " TAssert IsDictionary(a:dict)
-    " TAssert IsString(a:type)
-    call tskeleton#FetchMiniBits(a:dict, g:tskelBitsDir . a:type .'.txt', 0)
-    let bf = tskeleton#GlobBits(g:tskelBitsDir . a:type .'/', 2)
-    for f in bf
-        " TLogVAR f
-        if !isdirectory(f) && filereadable(f)
-            let bb = tlib#url#Decode(fnamemodify(f, ":t"))
-            let bn = tskeleton#PurifyBit(bb)
-            let bt = join(readfile(f), "\n")
-            let [bt, meta] = tskeleton#ExtractMeta(bt)
-            let a:dict[bn] = {'text': bt, 'menu': bb, 'meta': meta, 'bitfile': f}
-        endif
-    endfor
-endf
 
 function! TSkelNewScratchHook_viki()
     let b:vikiMarkInexistent = 0
 endf
 
-function! TSkelBufferBits_tags(dict, filetype) "{{{3
-    " TAssert IsDictionary(a:dict)
-    " TAssert IsString(a:filetype)
-    if exists('*TSkelProcessTag_'. a:filetype)
-        let td_id = join(map(tagfiles(), 'fnamemodify(v:val, ":p")'), '\n')
-        if !empty(td_id)
-            let tag_defs = get(s:tag_defs, td_id, {})
-            if empty(tag_defs)
-                echom 'tSkeleton: Building tags menu for '. expand('%')
-                let tags = taglist('.')
-                call sort(tags, 's:SortByFilename')
-                call filter(tags, 'TSkelProcessTag_{a:filetype}(tag_defs, v:val)')
-                let s:tag_defs[td_id] = tag_defs
-                echo
-                redraw
-            endif
-            call extend(a:dict, tag_defs, 'keep')
-            let menu_prefix = tlib#var#Get('tskelMenuPrefix_tags', 'bg')
-            if !empty(menu_prefix)
-                let s:sort_tag_defs = tag_defs
-                let tagnames = sort(keys(tag_defs), 's:SortBySource')
-                call filter(tagnames, 'tskeleton#NewBufferMenuItem(b:tskelBufferMenu, v:val)')
-            endif
-        endif
-    endif
-endf
-
-if !exists('*TSkelFiletypeBits_functions_vim')
-    function! TSkelFiletypeBits_functions_vim(dict, filetype) "{{{3
-        " TAssert IsDictionary(a:dict)
-        " TAssert IsString(a:filetype)
-        redir => fns
-        silent fun
-        redir END
-        let fnl = split(fns, '\n')
-        call map(fnl, 'matchstr(v:val, ''^\S\+\s\+\zs.\+$'')')
-        call filter(fnl, 'v:val[0:4] != ''<SNR>''')
-        for f in sort(fnl)
-            let fn = matchstr(f, '^.\{-}\ze(')
-            let fr = substitute(f, '(\(.\{-}\))$', '\=tskeleton#ReplacePrototypeArgs(submatch(1), ''\V...'')', "g")
-            " TLogDBG fn ." -> ". fr
-            let a:dict[fn] = {'text': fr, 'menu': 'Function.'. fn}
-        endfor
-    endf
-endif
-
-function! TSkelProcessTag_vim(dict, tag)
-    return tskeleton#ProcessTag_functions_with_parentheses(a:dict, a:tag, '\V...')
-endf
-
-function! TSkelProcessTag_ruby(dict, tag)
-    return tskeleton#ProcessTag_functions_with_parentheses(a:dict, a:tag, '\*\a\+\s*$')
-endf
-
-function! TSkelProcessTag_c(dict, tag)
-    return tskeleton#ProcessTag_functions_with_parentheses(a:dict, a:tag, '')
-endf
-
-function! TSkelBufferBits_mini(dict, filetype)
-    call tskeleton#FetchMiniBits(a:dict, expand('%:p:h') .'/.tskelmini', 1)
-endf
 
 function! TSkeletonMapGoToNextTag() "{{{3
     nnoremap <silent> <c-j> :call tskeleton#GoToNextTag()<cr>
@@ -299,22 +232,29 @@ function! TSkeletonMapGoToNextTag() "{{{3
     inoremap <silent> <c-j> <c-\><c-o>:call tskeleton#GoToNextTag()<cr>
 endf
 
+
 command! -nargs=* -complete=custom,tskeleton#SelectTemplate TSkeletonSetup 
             \ call tskeleton#Setup(<f-args>)
+
 
 command! -nargs=? -complete=custom,tskeleton#SelectTemplate TSkeletonEdit 
             \ call tskeleton#Edit(<q-args>)
 
+
 command! -nargs=? -complete=customlist,tskeleton#EditBitCompletion TSkeletonEditBit 
             \ call tskeleton#EditBit(<q-args>)
+
 
 command! -nargs=* -complete=custom,tskeleton#SelectTemplate TSkeletonNewFile 
             \ call tskeleton#NewFile(<f-args>)
 
+
 command! -bar -nargs=? TSkeletonBitReset call tskeleton#ResetBits(<q-args>)
+
 
 command! -nargs=? -complete=custom,tskeleton#SelectBit TSkeletonBit
             \ call tskeleton#Bit(<q-args>)
+
 
 command! TSkeletonCleanUpBibEntry call tskeleton#CleanUpBibEntry()
 
@@ -329,6 +269,10 @@ if !hasmapto("tskeleton#ExpandBitUnderCursor") "{{{2
     else
         exec "inoremap <unique> ". g:tskelMapInsert ." <c-\\><c-o>:call tskeleton#ExpandBitUnderCursor('i')<cr>"
     endif
+endif
+if !hasmapto("tskeleton#WithSelection") "{{{2
+    exec "vnoremap <unique> ". g:tskelMapLeader ."# d:call tskeleton#WithSelection('')<cr>"
+    exec "vnoremap <unique> ". g:tskelMapLeader ."<space> d:call tskeleton#WithSelection(' ')<cr>"
 endif
 if !hasmapto("tskeleton#LateExpand()") "{{{2
     exec "nnoremap <unique> ". g:tskelMapLeader ."x :call tskeleton#LateExpand()<cr>"
@@ -373,11 +317,16 @@ augroup tSkeleton
     
     autocmd FileType bib if !hasmapto(":TSkeletonCleanUpBibEntry") | exec "noremap <buffer> ". g:tskelMapLeader ."c :TSkeletonCleanUpBibEntry<cr>" | endif
 augroup END
-            
+
+
 call tskeleton#PrepareBits('general')
 
+
 finish
+
 -------------------------------------------------------------------
+CHANGES:
+
 1.0
 - Initial release
 
@@ -612,3 +561,43 @@ tlib#cache#Filename)
 - FIX: Command-line completion when tSkeleton wasn't invoked yet (and 
 menu wasn't built).
 
+4.1
+- Automatically define iabbreviations by adding [bg]:tskelAbbrevPostfix 
+(default: '#') to the bit name (i.e., a bit with the file "foo.bar" will 
+by default create the menu entry "TSkel.foo.bar" for the bit "bar" and 
+the abbreviation "bar#"). If this causes problems, set 
+g:tskelAutoAbbrevs to 0.
+- Bits can have a <tskel:abbrev> section that defines the abbreviation.
+- New type 'abbreviations': This will make your abbreviations accessible 
+as a template (in case you can't remember their names)
+- New experimental <tskel:condition> section (a vim expression) that 
+checks if a bit is eligible in the current context.
+- New <+input()+> tag.
+- New <+execute()+> tag.
+- New <+let(VAR=VALUE)+> tag.
+- <+include(NAME)+> as synonym for <+bit:NAME+>.
+- Experimental <+if()+> ... <+elseif()+> ... <+else+> ... <+endif+>, 
+<+for(var in list)+> ... <+endfor+> tags.
+- Special tags <+nop+>, <+joinline+>, <+nl+> to prevent certain 
+problems.
+- These special tags have to be lower case.
+- Made tskeleton#GoToNextTag() smarter in recognizing something like: 
+<+/DEFAULT+>.
+- Defined <Leader>## and <Leader>#<space> (see g:tskelMapLeader) as 
+visual command (the user will be queried for the name of a skeleton)
+- Some functions have moved and changed names. It should now be possible 
+to plug-in custom template expanders (or re-use others).
+- Use append() via tlib#buffer#InsertText() to insert bits. This could 
+cause old problems to reappear although it seems to work fine.
+- The markup should now be properly configurable (per buffer; you can 
+set template-specific markers in the tskel:here_before section).
+- Require tlib 0.14
+- The default value for g:tskelUseBufferCache is 0 as many people might 
+find the accumulation of cached information somewhat surprising. Unless 
+you use tag/functions type of skeleton bit, it's unnecessary anyway.
+- Removed the dependency on genutils.
+- The g:tskelMarkerCursor variable was removed and replaced with 
+g:tskelMarkerCursor_mark and g:tskelMarkerCursor_rx.
+
+
+" Not yet: This allows for something like <+CURSOR/foo+>.
