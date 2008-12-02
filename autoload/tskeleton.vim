@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-09-03.
-" @Last Change: 2007-11-17.
-" @Revision:    0.0.1156
+" @Last Change: 2008-12-01.
+" @Revision:    0.0.1163
 
 if &cp || exists("loaded_tskeleton_autoload")
     finish
@@ -694,7 +694,7 @@ function! s:Modify(text, modifier) "{{{3
         let rv = toupper(rv[0]) . tolower(strpart(rv, 1))
     endif
     if a:modifier =~# premod.'C'
-        let rv = substitute(rv, '\(^\|[^a-zA-Z0-9_]\)\(.\)', '\u\2', 'g')
+        let rv = substitute(rv, '\(^\|[^a-zA-Z0-9]\)\(.\)', '\u\2', 'g')
     endif
     if a:modifier =~# premod.'s'
         " let mod  = matchstr(a:modifier, '^[^s]*s\zs.*\ze$')
@@ -1479,6 +1479,7 @@ function! tskeleton#PrepareBits(...) "{{{3
             " TLogDBG 'PrepareBufferFromCache'
             call s:PrepareBufferFromCache(filetype)
         else
+            call s:InitBufferMenu()
             let b:tskelBitDefs  = {}
             for ft in ft_group
                 " TLogVAR ft
@@ -1584,7 +1585,6 @@ endf
 
 function! s:PrepareBuffer(filetype)
     " TLogDBG bufname('%')
-    call s:InitBufferMenu()
     let fns = s:CollectFunctions('tskeleton#%s#BufferBits')
                 \ + s:CollectFunctions('tskeleton#%s#BufferBits_'. a:filetype)
     " TLogVAR fns
@@ -2393,7 +2393,7 @@ endf
 
 
 function! tskeleton#GoToNextTag() "{{{3
-    let rx = '\(???\|+++\|!!!\|###\|'. tskeleton#WrapMarker('') .'\|'. tskeleton#TagRx() .'\)'
+    let rx = '\('. g:tskelMarkerExtra .'\|'. tskeleton#WrapMarker('') .'\|'. tskeleton#TagRx() .'\)'
     let x  = search(rx, 'c')
     if x > 0
         let lc = exists('b:tskelLastCol')  ? b:tskelLastCol : col('.')
@@ -2404,7 +2404,7 @@ function! tskeleton#GoToNextTag() "{{{3
         " TLogVAR ms
         let ml = len(ms)
         " TLogVAR ml
-        if ms == '???' || ms == '+++' || ms == '###'
+        if ms =~# g:tskelMarkerExtra
             call s:TagSelect(ml, 'v')
         else
             if ml == 4

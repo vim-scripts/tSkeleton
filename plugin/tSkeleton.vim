@@ -2,8 +2,8 @@
 " @Author:      Thomas Link (micathom AT gmail com?subject=vim)
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     21-Sep-2004.
-" @Last Change: 2007-11-17.
-" @Revision:    4.3.3780
+" @Last Change: 2008-11-17.
+" @Revision:    3791
 "
 " GetLatestVimScripts: 1160 1 tSkeleton.vim
 " http://www.vim.org/scripts/script.php?script_id=1160
@@ -22,10 +22,13 @@ if &cp || exists("loaded_tskeleton") "{{{2
     finish
 endif
 if !exists('loaded_tlib') || loaded_tlib < 14
-    echoerr "tSkeleton requires tlib >= 0.14"
-    finish
+    runtime plugin/02tlib.vim
+    if !exists('loaded_tlib') || loaded_tlib < 14
+        echoerr "tSkeleton requires tlib >= 0.14"
+        finish
+    endif
 endif
-let loaded_tskeleton = 403
+let loaded_tskeleton = 405
 
 
 if !exists("g:tskelDir") "{{{2
@@ -68,6 +71,7 @@ if !exists("g:tskelAddMapInsert")  | let g:tskelAddMapInsert  = 0             | 
 if !exists("g:tskelMarkerHiGroup") | let g:tskelMarkerHiGroup = 'Special'     | endif "{{{2
 if !exists("g:tskelMarkerLeft")    | let g:tskelMarkerLeft    = "<+"           | endif "{{{2
 if !exists("g:tskelMarkerRight")   | let g:tskelMarkerRight   = "+>"           | endif "{{{2
+if !exists('g:tskelMarkerExtra')   | let g:tskelMarkerExtra   = '???\|+++\|!!!\|###' | endif
 if !exists("g:tskelMarkerCursor_mark") | let g:tskelMarkerCursor_mark = "CURSOR"           | endif "{{{2
 if !exists("g:tskelMarkerCursor_volatile") | let g:tskelMarkerCursor_volatile = "/CURSOR"           | endif "{{{2
 if !exists("g:tskelMarkerCursor_rx")   | let g:tskelMarkerCursor_rx = 'CURSOR\(/\(.\{-}\)\)\?' | endif "{{{2
@@ -639,4 +643,15 @@ html_common.
 - tskelKeyword_{&ft} and tskelGroup_{&ft} variables can be buffer-local
 - Case-sensitivity can be configured via [bg]:tskelCaseSensitive and 
 [bg]:tskelCaseSensitive_{&filetype}
+- Make sure tlib is loaded even if it is installed in a different 
+rtp-directory
+
+4.4
+- Make sure tlib is loaded even if it is installed in a different 
+rtp-directory
+
+4.5
+- Call s:InitBufferMenu() earlier.
+- C modifier: Consider _ whitespace
+- g:tskelMarkerExtra (extra markers for tskeleton#GoToNextTag)
 
