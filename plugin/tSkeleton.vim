@@ -1,35 +1,34 @@
 " tSkeleton.vim
-" @Author:      Thomas Link (micathom AT gmail com?subject=vim)
+" @Author:      Tom Link (micathom AT gmail com?subject=vim)
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     21-Sep-2004.
-" @Last Change: 2008-11-17.
-" @Revision:    3791
+" @Last Change: 2009-08-30.
+" @Revision:    3867
 "
 " GetLatestVimScripts: 1160 1 tSkeleton.vim
 " http://www.vim.org/scripts/script.php?script_id=1160
 "
-" TODO:
-" - When bits change, opened hidden buffer don't get updated it seems.
-" - Enable multiple skeleton directories (and maybe other sources like 
-"   DBs).
-" - Sorted menus.
-" - ADD: More html bits
-" - ADD: <tskel:post> embedded tag (evaluate some vim code on the visual 
-"   region covering the final expansion)
+" TODO: When bits change, opened hidden buffer don't get updated it 
+" seems.
+" TODO: Enable multiple skeleton directories (and maybe other sources 
+" like DBs).
+" TODO: Sorted menus.
+" TODO: ADD: More html bits
+" TODO: ADD: <tskel:post> embedded tag (evaluate some vim code on the 
+" visual region covering the final expansion)
 
 
 if &cp || exists("loaded_tskeleton") "{{{2
     finish
 endif
-if !exists('loaded_tlib') || loaded_tlib < 14
+if !exists('loaded_tlib') || loaded_tlib < 29
     runtime plugin/02tlib.vim
-    if !exists('loaded_tlib') || loaded_tlib < 14
-        echoerr "tSkeleton requires tlib >= 0.14"
+    if !exists('loaded_tlib') || loaded_tlib < 29
+        echoerr "tSkeleton requires tlib >= 0.29"
         finish
     endif
 endif
-let loaded_tskeleton = 405
-
+let loaded_tskeleton = 407
 
 if !exists("g:tskelDir") "{{{2
     let g:tskelDir = get(split(globpath(&rtp, 'skeletons/'), '\n'), 0, '')
@@ -51,6 +50,9 @@ if !exists('g:tskelBitsDir') "{{{2
     call tlib#dir#Ensure(g:tskelBitsDir)
 endif
 
+if !exists('g:tskelBitsIgnore')
+    let g:tskelBitsIgnore = tlib#rx#Suffixes()   "{{{2
+endif
 
 if !exists("g:tskelTypes") "{{{2
     " 'skeleton' (standard tSkeleton functionality)
@@ -88,8 +90,27 @@ if !exists("g:tskelRevisionGrpIdx")   | let g:tskelRevisionGrpIdx = 3 | endif "{
 if !exists("g:tskelMaxRecDepth") | let g:tskelMaxRecDepth = 10 | endif "{{{2
 if !exists("g:tskelChangeDir")   | let g:tskelChangeDir   = 1  | endif "{{{2
 if !exists("g:tskelMapComplete") | let g:tskelMapComplete = 1  | endif "{{{2
-if g:tskelMapComplete
-    set completefunc=tskeleton#Complete
+" if g:tskelMapComplete
+"     set completefunc=tskeleton#Complete
+" endif
+
+if !exists("g:tskelMapHyperComplete") "{{{2
+    if empty(maparg('<c-space>') . maparg('<c-space>', 'i'))
+        let g:tskelMapHyperComplete = '<c-space>'
+    else
+        let g:tskelMapHyperComplete = ''
+    endif
+endif
+if !exists('g:tskelHyperType')
+    " Either query or pum.
+    " If you set the variable to "pum", you have to accept completions 
+    " with <c-y>.
+    let g:tskelHyperType = 'query'   "{{{2
+    " let g:tskelHyperType = 'pum'   "{{{2
+endif
+if !exists("g:tskelHyperComplete") "{{{2
+    " let g:tskelHyperComplete = {'use_completefunc': 1, 'use_omnifunc': 1, 'scan_words': 1, 'scan_tags': 1}
+    let g:tskelHyperComplete = {'use_completefunc': 1, 'scan_words': 1, 'scan_tags': 1}
 endif
 
 if !exists("g:tskelMenuPrefix")     | let g:tskelMenuPrefix  = 'TSke&l'    | endif "{{{2
@@ -153,6 +174,17 @@ endif
 if !exists("g:tskelBitGroup_xslt") "{{{2
     let g:tskelBitGroup_xslt = ['xslt', 'xml']
 endif
+
+
+if !exists("g:tskel_completions") "{{{2
+    let g:tskel_completions = {
+                \ 'use_omnifunc': 'tskeleton#Complete_use_omnifunc',
+                \ 'use_completefunc': 'tskeleton#Complete_use_completefunc',
+                \ 'scan_words': 'tskeleton#Complete_scan_words',
+                \ 'scan_tags': 'tskeleton#Complete_scan_tags',
+                \ }
+endif
+
 
 let g:tskeleton_SetFiletype = 1
 
@@ -260,6 +292,29 @@ function! TSkeletonMapGoToNextTag() "{{{3
 endf
 
 
+" In the current buffer, map a:key so that
+"   - If the cursor is located at the beginning of the line or if the 
+"     the cursor is over a whitespace character, indent the current
+"     line
+"   - otherwise expand the bit under the cursor or (if not suitable bit
+"     was found) use &omnifunc, &completefunc, tags, and (as fallback 
+"     strategy) the words in the buffer as possible completions.
+function! TSkeletonMapHyperComplete(key, ...) "{{{3
+    let default = a:0 >= 1 ? a:1 : '=='
+    if g:tskelHyperType == 'pum'
+        exec 'inoremap '. a:key .' <C-R>=tskeleton#HyperComplete_{g:tskelHyperType}("i", '. string(default) .')<cr>'
+    elseif g:tskelHyperType == 'query'
+        exec 'inoremap '. a:key .' <c-\><c-o>:call tskeleton#HyperComplete_{g:tskelHyperType}("i", '. string(default) .')<cr>'
+    else
+        echoerr "tSkeleton: Unknown type for g:tskelHyperType: "+ g:tskelHyperType
+    endif
+    exec 'noremap '. a:key .' :call tskeleton#HyperComplete_query("n", '. string(default) .')<cr>'
+endf
+if !empty(g:tskelMapHyperComplete)
+    call TSkeletonMapHyperComplete(g:tskelMapHyperComplete)
+endif
+
+
 command! -nargs=* -complete=custom,tskeleton#SelectTemplate TSkeletonSetup 
             \ call tskeleton#Setup(<f-args>)
 
@@ -292,7 +347,7 @@ endif
 if !hasmapto("tskeleton#ExpandBitUnderCursor") "{{{2
     exec "nnoremap <unique> ". g:tskelMapLeader ."# :call tskeleton#ExpandBitUnderCursor('n')<cr>"
     if g:tskelAddMapInsert
-        exec "inoremap <unique> ". g:tskelMapInsert ." <c-\\><c-o>:call tskeleton#ExpandBitUnderCursor('i','', ". string(g:tskelMapInsert) .")<cr>"
+        exec "inoremap <unique> ". g:tskelMapInsert ." <c-\\><c-o>:call tskeleton#ExpandBitUnderCursor('i','', {'string':". string(g:tskelMapInsert) ."})<cr>"
     else
         exec "inoremap <unique> ". g:tskelMapInsert ." <c-\\><c-o>:call tskeleton#ExpandBitUnderCursor('i')<cr>"
     endif
@@ -310,14 +365,7 @@ endif
 augroup tSkeleton
     autocmd!
     if !exists("g:tskelDontSetup") "{{{2
-        let s:cwd = getcwd()
-        exec 'cd '. tlib#arg#Ex(g:tskelDir)
-        try
-            call map(split(glob('templates/**'), '\n'), 'tskeleton#DefineAutoCmd(v:val)')
-        finally
-            exec 'cd '. tlib#arg#Ex(s:cwd)
-            unlet s:cwd
-        endtry
+        call map(split(glob(tlib#file#Join([g:tskelDir, 'templates', '**'], 1)), '\n'), 'isdirectory(v:val) || tskeleton#DefineAutoCmd(v:val)')
         autocmd BufNewFile *.bat       TSkeletonSetup batch.bat
         autocmd BufNewFile *.tex       TSkeletonSetup latex.tex
         autocmd BufNewFile tc-*.rb     TSkeletonSetup tc-ruby.rb
@@ -654,4 +702,24 @@ rtp-directory
 - Call s:InitBufferMenu() earlier.
 - C modifier: Consider _ whitespace
 - g:tskelMarkerExtra (extra markers for tskeleton#GoToNextTag)
+
+4.6
+- Minibits: Allow single words as bit definition: "word" expands to 
+"word<+CURSOR+>"
+- Require tlib 0.29
+
+4.7
+- TSkeletonSetup: allow full filenames as argument
+- Auto templates: don't cd into the templates directory
+- tskeleton#ExpandBitUnderCursor(): Third argument is a dictionary.
+- TSkeletonMapHyperComplete() (default: <c-space>): Map a magic key that 
+expands skeletons or, if no matching templates were found, completions, 
+tags, words etc.
+- FIX: Problem with <+name/expandsion+> kind of tags when located at the 
+beginning or end of a line
+- s:GetBitDefs()
+- Improved tskeleton#Complete() (for use as completefunc or omnifunc)
+- FIX: Cursor positioning after expanding templates without a <+CURSOR+> 
+tag
+- Don't build the menu for tSkeleton scratch buffers
 
