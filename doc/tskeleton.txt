@@ -1,15 +1,15 @@
-*tSkeleton.txt*              tSkeleton -- File Templates and Code Skeletons
+*tskeleton.txt*              tskeleton -- File Templates and Code Skeletons
 
 Author: Thomas Link, micathom AT gmail com?subject=vim
 
-tSkeleton provides file templates and code skeletons (snippets). These 
+tskeleton provides file templates and code skeletons (snippets). These 
 templates may contain special tags that are replaced with some computed 
 value (e.g., variables, user input ...), vimscript code, or place 
-holders/jump positions (see |tSkeleton-jump-positions|).
+holders/jump positions (see |tskeleton-jump-positions|).
 
 
 -----------------------------------------------------------------------
-                                                    *tSkeleton-install*
+                                                    *tskeleton-install*
 Install~
 
 Edit the vba file and type:
@@ -20,7 +20,7 @@ See :help vimball for details. If you use vim 7.0, you probably need to
 update vimball first.
 
 If you don't already have some skeletons, you may want to download 
-tSkeleton-Samples.zip from:
+tskeleton-Samples.zip from:
 
     http://www.vim.org/scripts/script.php?script_id=1160
 
@@ -41,7 +41,7 @@ look like this:
 
                                                     *g:tskelDir*
 If you re-use skeletons from version 1.0 with a later version, you have 
-to update the |tSkeleton-place-holder| markup. Make sure the variable 
+to update the |tskeleton-place-holder| markup. Make sure the variable 
 g:tskelDir points to the right directory.
 
 You might want to use imaps.vim's (vimscript #244 or vimscript #475) place 
@@ -51,7 +51,7 @@ If you don't use imaps.vim, you can use |TSkeletonMapGoToNextTag()|.
 
 
 -----------------------------------------------------------------------
-                                                    *tSkeleton-usage*
+                                                    *tskeleton-usage*
 File templates~
 
 The file skeletons are stored in the skeletons subdirectory. Which 
@@ -95,13 +95,13 @@ Example: Templates file names for some vim-related files: >
     ~/vimfiles/skeletons/templates/vim/vim #%2fvimfiles#%2fsyntax%2f#.vim
 
 < 
-                                                    *tSkeleton-place-holder*
+                                                    *tskeleton-place-holder*
 
 Tags (which look like <+...+>) serve two purposes:
     - marker for jump positions
     - dynamic content expansion
 
-You can use tags to define cursor jump positions. tSkeleton also 
+You can use tags to define cursor jump positions. tskeleton also 
 supports some special tags that are expanded when inserting the 
 skeleton.
 
@@ -142,8 +142,8 @@ A list of special tags:
 In order to define your own tag, you have to define a function called 
 TSkeleton_TAGNAME() that returns the text to be filled in.
 
-                                                    *tSkeleton-tags*
-tSkeleton also supports the following pseudo-tags:
+                                                    *tskeleton-tags*
+tskeleton also supports the following pseudo-tags:
 
     <+CURSOR+>                                      *tSkeletion-<+CURSOR+>*
         Where to place the cursor after insertion
@@ -219,11 +219,16 @@ Interaction:                                        *tSkeletion-<+input+>*
         this case any whitespace (including one newline) after the tag 
         will be removed. See also the notes on |tSkeletion-<+input+>|.
 
-    <+select(VAR, LIST)+>
+                                                    *tSkeletion-<+select+>*
+    <+select(VAR, LIST, [TYPE='s'], [SEPARATOR=', '])+>
         Let the user select an item from a list.
         VAR is a string.
+        TYPE is either 's' (single selection) or 'm' (multiple selection) -- 
+        see also |tlib#input#List()|.
+        If TYPE is 'm', the results are joined with SEPARATOR.
         Example: >
             before(<+select("s:type", [":all", ":each"])+>)
+            before(<+select("s:type", ["A", "B", "C", "D"], "m", "-")+>)
 < 
 
 Other:                                              *tSkeletion-<+nl+>*
@@ -282,7 +287,7 @@ is most likely evaluated in a different buffer in a hypothetically
 unknown context.
 
 
-                                                    *tSkeleton-jump-positions*
+                                                    *tskeleton-jump-positions*
 Unknown tags are kept in the expanded skeleton. These tags can be used 
 as cursor jump marks. This syntax was originally used by imap (vimscript 
 #244 or vimscript #475). If you don't want to install imap, you can also  
@@ -307,10 +312,10 @@ When you insert this skeleton, the cursor will be placed at
 (the tag will remain selected). If you press <c-j> three times, the 
 cursor will jump to "<++>" (the tag will be deleted).
 
-Check out the "test_tSkeleton" skeleton for examples.
+Check out the "test_tskeleton" skeleton for examples.
 
 
-                                                    *tSkeleton-modifiers*
+                                                    *tskeleton-modifiers*
 Tags can be modified using modifiers, like in: >
 
     <+TAG NAME:MODIFIER+>
@@ -333,8 +338,8 @@ Example for a ruby class template: >
     <++>
 
 -----------------------------------------------------------------------
-                                                    *tSkeleton-code-skeletons*
-                                                    *tSkeleton-bits*
+                                                    *tskeleton-code-skeletons*
+                                                    *tskeleton-bits*
 Bits/Code Skeletons~
 
 Smaller skeleton bits are stored in SKELETONS/bits/FILETYPE/ or 
@@ -350,11 +355,11 @@ This will create skeletons for \newcommand and \newenvironment but will
 group the skeletons under the TSkel.Define. menu with the respective 
 accelerators.
 
-                                                    *tSkeleton-Types* *g:tskelTypes*
+                                                    *tskeleton-Types* *g:tskelTypes*
                                                     *tskeleton#Initialize()*
-tSkeleton supports several types of code templates:
+tskeleton supports several types of code templates:
 
-    - skeleton (standard tSkeleton functionality)
+    - skeleton (standard tskeleton functionality)
     - abbreviations (VIM abbreviations)
     - functions (VIM script functions extracted from :function)
     - mini ("mini" bits, one-liners etc.)
@@ -364,7 +369,7 @@ Not all types are enabled by default. User have to select, which types
 they want to use, by setting the g:tskelTypes at start-up. When changing 
 the variable, users might have to call tskeleton#Initialize().
 
-                                                    *tSkeleton-Skeleton*
+                                                    *tskeleton-Skeleton*
 Smaller skeleton bits are stored in SKELETONS/bits/FILETYPE/ or 
 SKELETONS/bits/general/. I.e., code skeletons can be filetype specific 
 or generally available.
@@ -383,7 +388,7 @@ submenus). Other special characters can be included by encoding them in
 hex form as %XX as it is done in URLs.  Example: "%5Csection" becomes 
 "\section".
 
-                                                    *tSkeleton-key-bindings*
+                                                    *tskeleton-key-bindings*
 The default key bindings for inserting code skeletons are:
 
     <Leader>## ... Expand name under cursor
@@ -399,7 +404,7 @@ makes up a skeleton name. Example: >
     let g:tskelKeyword_viki = '\(#\|{\)\?[^#{[:blank:]]\{-}'
 
 
-                                                    *tSkeleton-embedded-code*
+                                                    *tskeleton-embedded-code*
 Code skeletons may contain vim code that is evaluated before or after 
 expanding the tags. The before/after blocks are fed to |:exec| and must 
 not contain function definitions.
@@ -461,7 +466,7 @@ The before/after blocks are evaluated in the destination buffer. The
 variants here_before/here_after are evaluated in the scratch buffer for 
 the current code skeleton.
 
-                                                    *tSkeleton-groups*
+                                                    *tskeleton-groups*
                                                     *g:tskelBitGroup_{&filetype}*
 Groups~
 
@@ -474,11 +479,11 @@ variable (the default): >
 
 Bits of type "general" are always available.
 
-                                                    *tSkeleton-context*
-                                                    *tSkeleton-map*
+                                                    *tskeleton-context*
+                                                    *tskeleton-map*
 Maps -- Context-sensitive expansion~
 
-To some extent, tSkeleton is capable of offering the user only a small 
+To some extent, tskeleton is capable of offering the user only a small 
 selection of eligible bits for a specific context if a map file 
 ($VIMFILES/skeletons/map/{&filetype}) is provided. Such a map file is made up 
 of regular expressions matching a specific context (before the cursor 
@@ -495,7 +500,7 @@ If an eligible bit is undefined, the name is inserted as is. I.e. you
 don't have to define skeletons for all these options and argument names.
 
 
-                                                    *tSkeleton-minibits*
+                                                    *tskeleton-minibits*
 Minibits~
 
 Mini bits are kept in the files:
@@ -510,11 +515,11 @@ abbreviations and the like. Example: >
     IMHO    In my humble opinion
     AFAIK   As far as I know
 
-                                                    *tSkeleton-menu*
+                                                    *tskeleton-menu*
                                                     *g:tskelMenuPrefix*
 Menu~
 
-If g:tskelMenuPrefix is non-empty, tSkeleton will display a menu 
+If g:tskelMenuPrefix is non-empty, tskeleton will display a menu 
 containing all eligible bits for a certain filetype.
 
 The menu can be hierarchical and certain entries may have shortcuts by 
@@ -540,7 +545,7 @@ of elegible skeletons when pressing |i_CTRL-X_CTRL-U|.
 
 
 -----------------------------------------------------------------------
-                                                    *tSkeleton-commands*
+                                                    *tskeleton-commands*
 Commands~
                                                     *:TSkeletonNewFile*
 :TSkeletonNewFile ?template, ?destDir, ?destFileName
@@ -553,14 +558,14 @@ Commands~
 
 
 -----------------------------------------------------------------------
-                                                    *tSkeleton-utilities*
+                                                    *tskeleton-utilities*
 Utilities~
 
                                                     *tskeleton#IncreaseRevisionNumber()*
 The function tskeleton#IncreaseRevisionNumber() provides a way to 
 automatically update a revision number in the form >
 
-    @Revision: 1.0.311
+    @Revision: 1.0.314
 
 In order to use this function, add something like this to your |vimrc| 
 file: >
@@ -582,7 +587,7 @@ You can insert >
 
     call TSkeletonMapGoToNextTag()
 
-in after/plugin/tSkeleton.vim to map tskeleton#GoToNextTag() to <c-j> 
+in after/plugin/tskeleton.vim to map tskeleton#GoToNextTag() to <c-j> 
 similar to imap.vim.
 
 This will map <c-j> to tskeleton#GoToNextTag() that makes the cursor jump 
