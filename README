@@ -114,6 +114,8 @@ as cursor jump marks. This syntax was originally used by imap (vimscript
 #244 or vimscript #475). If you don't want to install imap, you can also  
 use |TSkeletonMapGoToNextTag()|.
 
+You can use vimscript #3326 to enhance your templates with dynamic placeholders.
+
 
 Demo:
 http://vimsomnia.blogspot.com/2010/11/tskeleton-and-stakeholders-vim-plugins.html
