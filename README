@@ -1,5 +1,14 @@
 This is a mirror of http://www.vim.org/scripts/script.php?script_id=1160
 
+Demo:
+http://vimsomnia.blogspot.com/2010/11/tskeleton-and-stakeholders-vim-plugins.html
+
+Also available via git
+http://github.com/tomtom/tskeleton_vim
+
+Additional bits/snippets:
+https://github.com/tomtom/tskeletons
+
 tSkeleton provides file templates and code skeletons (snippets). These 
 templates may contain special tags that are replaced with some computed 
 value (e.g., variables, user input ...), vimscript code, or place 
@@ -115,12 +124,4 @@ as cursor jump marks. This syntax was originally used by imap (vimscript
 use |TSkeletonMapGoToNextTag()|.
 
 You can use vimscript #3326 to enhance your templates with dynamic placeholders.
-
-
-Demo:
-http://vimsomnia.blogspot.com/2010/11/tskeleton-and-stakeholders-vim-plugins.html
-
-
-Also available via git
-http://github.com/tomtom/tskeleton_vim
 

@@ -3,8 +3,8 @@
 " @Website:     http://www.vim.org/account/profile.php?user_id=4037
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     2007-09-03.
-" @Last Change: 2011-12-17.
-" @Revision:    0.0.1849
+" @Last Change: 2012-02-09.
+" @Revision:    0.0.1916
 
 
 " call tlog#Log('Load: '. expand('<sfile>')) " vimtlib-sfile
@@ -131,6 +131,11 @@ if !exists('g:tskeleton#enable_stakeholders')
     let g:tskeleton#enable_stakeholders = 0   "{{{2
 endif
 
+if !exists('g:tskeleton#conceal_cchar')
+    " With |+conceal|, show this character for placeholders.
+    " If empty, don't use |:syn-conceal|.
+    let g:tskeleton#conceal_cchar = has('conceal') ? {'utf-8': '⬚', '_': '#'} : {}   "{{{2
+endif
 
 
 if !exists('*TSkeleton_FILE_DIRNAME') "{{{2
@@ -895,13 +900,14 @@ endf
 
 
 function! s:EvalBitProcess(eval, global) "{{{3
-    " TLogVAR a:eval
-    " TLogVAR a:global
+    " TLogVAR a:global, a:eval
     if !empty(a:eval)
+        let eval = substitute(a:eval, '\(^\|\n\)\s*".*\n', '', 'g')
+        " TLogVAR eval
         if a:global
-            call tskeleton#ExecInDestBuffer(a:eval)
+            call tskeleton#ExecInDestBuffer(eval)
         else
-            exec a:eval
+            exec eval
         endif
     endif
     " TLogVAR 'done'
@@ -1034,19 +1040,19 @@ function! tskeleton#ExecInDestBuffer(code) "{{{3
         let ws = bufwinnr(s:tskelDestBufNr)
         if ws != -1
             try
-                exec ws.'wincmd w'
+                exec 'noautocmd' ws.'wincmd w'
                 let code = substitute("\n". a:code ."\n", '\n\s*".\{-}\ze\n', "", "g")
                 " TLogVAR a:code
-                exec a:code
+                exec 'noautocmd' a:code
             finally
-                exec wb.'wincmd w'
+                exec 'noautocmd' wb.'wincmd w'
             endtry
         else
             try
-                silent exec 'sbuffer! '. s:tskelDestBufNr
+                silent exec 'noautocmd sbuffer! '. s:tskelDestBufNr
                 exec a:code
             finally
-                wincmd c
+                noautocmd wincmd c
             endtry
         endif
     else
@@ -1719,7 +1725,7 @@ function! tskeleton#PrepareBits(...) "{{{3
         for idx in range(1, s:tskelScratchMax)
             let ibn = bufnr(s:tskelScratchNr{idx})
             if bufloaded(ibn)
-                exec 'bdelete! '. ibn
+                exec 'noautocmd bdelete! '. ibn
             endif
         endfor
         let s:tskelScratchMax = 0
@@ -1816,7 +1822,9 @@ endf
 
 function! s:FiletypeInCache(filetype) "{{{3
     let cache = s:GetFiletypeBitsCacheFilename(a:filetype)
-    return filereadable(cache)
+    let filereadable = filereadable(cache)
+    " TLogVAR cache, filereadable
+    return filereadable
 endf
 
 
@@ -1824,6 +1832,7 @@ function! s:PrepareFiletypeFromCache(filetype) "{{{3
     let cache = s:GetFiletypeBitsCacheFilename(a:filetype)
     if !empty(cache)
         let g:tskelBits_{a:filetype} = eval(join(readfile(cache, 'b'), "\n"))
+        " TLogVAR cache, len(g:tskelBits_{a:filetype})
     endif
 endf
 
@@ -1832,6 +1841,7 @@ function! s:CacheFiletypeBits(filetype) "{{{3
     let cache = s:GetFiletypeBitsCacheFilename(a:filetype)
     if !empty(cache)
         call writefile([string(g:tskelBits_{a:filetype})], cache, 'b')
+        " TLogVAR cache, len(g:tskelBits_{a:filetype})
     endif
 endf
 
@@ -1846,6 +1856,7 @@ function! s:PrepareFiletype(filetype, reset)
     for fn in fns
         " TLogDBG 'PrepareFiletype '.fn
         call {fn}(g:tskelBits_{a:filetype}, a:filetype)
+        " TLogVAR fn, len(g:tskelBits_{a:filetype})
     endfor
     " TLogDBG 'bits for '. a:filetype .'='. string(keys(g:tskelBits_{a:filetype}))
 endf
@@ -2033,12 +2044,12 @@ function! s:EditScratchBuffer(filetype, ...) "{{{3
     let tskelFiletype = b:tskelFiletype
     if tsbnr >= 0
         " TLogVAR tsbnr
-        silent exec "sbuffer ". tsbnr
+        silent exec "noautocmd sbuffer ". tsbnr
     else
-        silent split
+        silent noautocmd split
         " TLogVAR idx
         " TLogDBG 'edit __TSkeletonScratch_'. idx .'__'
-        silent exec 'edit __TSkeletonScratch_'. idx .'__'
+        silent exec 'noautocmd edit __TSkeletonScratch_'. idx .'__'
         " TLogDBG 1
         let s:tskelScratchNr{idx} = bufnr("%")
         " let b:tskelScratchBuffer = 1
@@ -2152,13 +2163,13 @@ function! s:RetrieveBit(agent, bit, ...) "{{{3
     finally
         let @t = t
         call s:SetProcessing(processing)
-        wincmd c
+        noautocmd wincmd c
         let s:tskelScratchIdx = s:tskelScratchIdx - 1
         if s:tskelScratchIdx == 0
-            silent exec 'buffer '. s:tskelDestBufNr
+            silent exec 'noautocmd buffer '. s:tskelDestBufNr
             let s:tskelDestBufNr = -1
         else
-            silent exec 'buffer '. s:tskelScratchNr{s:tskelScratchIdx}
+            silent exec 'noautocmd buffer '. s:tskelScratchNr{s:tskelScratchIdx}
         endif
         call setpos('.', pos)
     endtry
@@ -2227,10 +2238,11 @@ function! s:InsertBit(agent, bit, mode) "{{{3
     let sli = s:Subline(li, c, a:mode)
     let by = line2byte(l) + c
     " Adjust for vim idiosyncrasy
+    " TLogVAR "orig", li, sli, c, e, l, by
     if c == e - 1 && li[c - 1] == " "
         let e = e - 1
     endif
-    " TLogVAR li, sli, c, e, l, by
+    " TLogVAR "adj", li, sli, c, e, l, by
     let i = s:GetIndent(sli)
     let [setCursor, bittext] = s:RetrieveBit(a:agent, a:bit, i)
     " TLogVAR setCursor, bittext
@@ -2407,6 +2419,7 @@ function! s:IsEOL(mode) "{{{3
     else
         let mode = a:mode
     endif
+    " TLogVAR a:mode, mode
     return mode =~? '1'
 endf
 
@@ -2558,12 +2571,11 @@ function! s:Eol(mode, col) "{{{3
     " TLogVAR a:mode, a:col, col('$'), a:col >= col('$')
     " TLogDBG col('.') .'-'. col('$')
     " echom "DBG Eol ". a:mode .' '. s:IsInsertMode(a:mode)
-    if s:IsInsertMode(a:mode)
-        " return a:col + 1 >= col('$')
-        return a:col >= col('$') - 1
-    else
+    " if s:IsInsertMode(a:mode)
+    "     return a:col >= col('$')
+    " else
         return a:col >= col('$') && &virtualedit =~ '^\(block\|onemore\)\?$'
-    endif
+    " endif
 endf
 
 
@@ -2592,7 +2604,7 @@ function! tskeleton#ExpandBitUnderCursor(mode, ...) "{{{3
         let @t    = ''
         let filetype = s:Filetype()
         let imode = s:IsInsertMode(a:mode)
-        " TLogVAR col0
+        " TLogVAR a:mode, imode, col0
         let col   = col0
         if imode
             if s:Eol(a:mode, col)
@@ -3032,13 +3044,32 @@ function! tskeleton#GoToNextTag() "{{{3
 endf
 
 
+let s:syn_clusters = {}
+
+
 function! tskeleton#Placeholders(line1, line2) "{{{3
     if s:tskel_use_placeholders
         if !exists("b:tskelHighlight")
             if !empty(g:tskelMarkerHiGroup)
                 " exec 'syntax match TSkelPlaceHolder /'. escape(tskeleton#WrapMarker('\w*', 'rx'), '/') .'/'
-                exec 'syntax match TSkelPlaceHolder /'. escape(tskeleton#WrapMarker('.\{-}', 'rx'), '/') .'/'
+                let cchar = get(g:tskeleton#conceal_cchar, &enc, get(g:tskeleton#conceal_cchar, '_', ''))
+                let conceal = empty(cchar) ? '' : (' conceal cchar='. cchar)
+                " TLogVAR &enc, cchar, conceal
+                exec 'syntax match TSkelPlaceHolder /'. escape(tskeleton#WrapMarker('.\{-}', 'rx'), '/') .'/'. conceal
                 exec 'hi def link TSkelPlaceHolder '. g:tskelMarkerHiGroup
+                if has_key(s:syn_clusters, &filetype)
+                    let syn = s:syn_clusters[&filetype]
+                else
+                    let syn = tlib#cmd#OutputAsList('syn list')
+                    call filter(syn, 'v:val =~ ''^\w\+\s\+cluster=''')
+                    " TLogVAR syn
+                    call map(syn, 'matchstr(v:val, ''^\w\+'')')
+                    let s:syn_clusters[&filetype] = syn
+                endif
+                " TLogVAR syn
+                for syncluster in syn
+                    exec 'syn cluster' syncluster 'add=TSkelPlaceHolder'
+                endfor
             endif
             let b:tskelHighlight = 1
         endif

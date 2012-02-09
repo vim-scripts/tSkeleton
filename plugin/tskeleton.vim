@@ -2,8 +2,8 @@
 " @Author:      Tom Link (micathom AT gmail com?subject=vim)
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     21-Sep-2004.
-" @Last Change: 2011-12-17.
-" @Revision:    3904
+" @Last Change: 2012-02-08.
+" @Revision:    3908
 "
 " GetLatestVimScripts: 1160 1 tskeleton.vim
 " http://www.vim.org/scripts/script.php?script_id=1160
@@ -27,7 +27,7 @@ if !exists('loaded_tlib') || loaded_tlib < 29
         finish
     endif
 endif
-let loaded_tskeleton = 412
+let loaded_tskeleton = 413
 
 
 if !exists("g:tskelDir") "{{{2
@@ -198,6 +198,7 @@ augroup tSkeleton
 
     exec 'autocmd BufNewFile,BufRead '. escape(g:tskelDir, ' ') .'* if g:tskeleton_SetFiletype | set ft=tskeleton | endif'
     exec 'autocmd BufWritePost '. escape(g:tskelBitsDir, ' ') .'* exec "TSkeletonBitReset ".expand("<afile>:p:h:t")'
+    autocmd FileType * call tskeleton#PrepareBits(&filetype)
     autocmd SessionLoadPost,BufEnter * if (g:tskelMenuPrefix != '' && g:tskelMenuCache != '' && !tskeleton#IsScratchBuffer()) | call tskeleton#BuildBufferMenu(1) | endif
     
     autocmd FileType bib if !hasmapto(":TSkeletonCleanUpBibEntry") | exec "noremap <buffer> ". g:tskelMapLeader ."c :TSkeletonCleanUpBibEntry<cr>" | endif
