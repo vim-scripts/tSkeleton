@@ -2,32 +2,23 @@
 " @Author:      Tom Link (micathom AT gmail com?subject=vim)
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     21-Sep-2004.
-" @Last Change: 2012-02-08.
-" @Revision:    3908
+" @Last Change: 2012-10-25.
+" @Revision:    3952
 "
 " GetLatestVimScripts: 1160 1 tskeleton.vim
 " http://www.vim.org/scripts/script.php?script_id=1160
-"
-" TODO: When bits change, opened hidden buffer don't get updated it 
-" seems.
-" TODO: Enable multiple skeleton directories (and maybe other sources 
-" like DBs).
-" TODO: Sorted menus.
-" TODO: ADD: More html bits
-" TODO: ADD: <tskel:post> embedded tag (evaluate some vim code on the 
-" visual region covering the final expansion)
 
 if &cp || exists("loaded_tskeleton") "{{{2
     finish
 endif
-if !exists('loaded_tlib') || loaded_tlib < 29
+if !exists('loaded_tlib') || loaded_tlib < 103
     runtime plugin/02tlib.vim
-    if !exists('loaded_tlib') || loaded_tlib < 29
-        echoerr "tSkeleton requires tlib >= 0.29"
+    if !exists('loaded_tlib') || loaded_tlib < 103
+        echoerr "tSkeleton requires tlib >= 1.03"
         finish
     endif
 endif
-let loaded_tskeleton = 413
+let loaded_tskeleton = 500
 
 
 if !exists("g:tskelDir") "{{{2
@@ -39,30 +30,67 @@ if !isdirectory(g:tskelDir) "{{{2
 endif
 let g:tskelDir = tlib#dir#CanonicName(g:tskelDir)
 
-if !exists('g:tskelBitsDir') "{{{2
-    let g:tskelBitsDir = g:tskelDir .'bits/'
-    " call tlib#dir#Ensure(g:tskelBitsDir)
+if !exists('g:tskelGlobalBitsPath') "{{{2
+    " A comma-separated list of directories (see |globpath()|) for 
+    " globally available bits. If empty, use all "skeletons/bits/" 
+    " subdirectories in 'runtimepath'.
+    let g:tskelGlobalBitsPath = exists('g:tskelBitsDir') ? g:tskelBitsDir : ''  "{{{2
+endif
+
+if !exists('g:tskelLocalBitsDirs') "{{{2
+    " A list of directories that contains buffer-local bits.
+    let g:tskelLocalBitsDirs = ['.tskel', '_tskel']  "{{{2
 endif
 
 let g:tskeleton_SetFiletype = 1
 
-if !exists("g:tskelMapLeader")     | let g:tskelMapLeader     = "<Leader>#"   | endif "{{{2
-if !exists("g:tskelMapInsert")     | let g:tskelMapInsert     = '<c-\><c-\>'  | endif "{{{2
-if !exists("g:tskelAddMapInsert")  | let g:tskelAddMapInsert  = 0             | endif "{{{2
-if !exists("g:tskelMenuCache")      | let g:tskelMenuCache = '.tskelmenu'  | endif "{{{2
-if !exists("g:tskelMenuPrefix")     | let g:tskelMenuPrefix  = 'TSke&l'    | endif "{{{2
+if !exists("g:tskelMapLeader")
+    " Map leader for maps in normal mode.
+    let g:tskelMapLeader = "<Leader>#"  "{{{2
+endif
+
+if !exists("g:tskelMapInsert")
+    " Map leader for maps in insert mode.
+    let g:tskelMapInsert = '<c-\><c-\>'  "{{{2
+endif
+
+if !exists("g:tskelAddMapInsert")
+    " If true, insert |g:tskelMapInsert| after expanding a bit. This 
+    " could be useful if you plan to map |g:tskelMapInsert| to something 
+    " like <space>.
+    let g:tskelAddMapInsert  = 0  "{{{2
+endif
+
+if !exists("g:tskelMenuCache")
+    " If non-empty, cache menu items.
+    let g:tskelMenuCache = '.tskelmenu'  "{{{2
+endif
+
+if !exists("g:tskelMenuPrefix")
+    " :nodoc:
+    " Prefix for menu items.
+    let g:tskelMenuPrefix  = 'TSke&l'  "{{{2
+endif
+
+if !exists("g:tskelMapGoToNextTag")
+    " If non-empty, create maps for "go to next place holder" feature. 
+    " This map should work in normal, visual, selection, and insert 
+    " mode.
+    let g:tskelMapGoToNextTag = '<c-j>'  "{{{2
+endif
 
 if !exists("g:tskelMapHyperComplete") "{{{2
     if empty(maparg('<c-space>') . maparg('<c-space>', 'i'))
-        let g:tskelMapHyperComplete = '<c-space>'
+        " Key to invoke hyper completion (see |g:tskelHyperComplete|).
+        let g:tskelMapHyperComplete = '<c-space>'  "{{{2
     else
         let g:tskelMapHyperComplete = ''
     endif
 endif
 
 if !exists("g:tskelHyperComplete") "{{{2
-    " let g:tskelHyperComplete = {'use_completefunc': 1, 'use_omnifunc': 1, 'scan_words': 1, 'scan_tags': 1}
-    let g:tskelHyperComplete = {'use_completefunc': 1, 'scan_words': 1, 'scan_tags': 1}
+    " A dictionary of items that should be offered on "hyper complete".
+    let g:tskelHyperComplete = {'use_completefunc': 1, 'scan_words': 1, 'scan_tags': 1}  "{{{2
 endif
 
 if !exists('g:tskelHyperType')
@@ -72,15 +100,20 @@ if !exists('g:tskelHyperType')
     " This variable must be set in your |vimrc| file before loading the 
     " tskeleton plugin.
     let g:tskelHyperType = 'query'   "{{{2
-    " let g:tskelHyperType = 'pum'   "{{{2
 endif
 
 
+" :nodoc:
+" Create maps for the "go to next placeholder" functionality (see g:tskelMapGoToNextTag|).
 function! TSkeletonMapGoToNextTag() "{{{3
-    nnoremap <silent> <c-j> :call tskeleton#GoToNextTag()<cr>
-    vnoremap <silent> <c-j> <c-\><c-n>:call tskeleton#GoToNextTag()<cr>
-    inoremap <silent> <c-j> <c-\><c-o>:call tskeleton#GoToNextTag()<cr>
+    let map = type(g:tskelMapGoToNextTag) == 0 ? '<c-j>' : g:tskelMapGoToNextTag
+    exec 'nnoremap <silent>' map ':call tskeleton#GoToNextTag()<cr>'
+    exec 'vnoremap <silent>' map '<c-\><c-n>:call tskeleton#GoToNextTag()<cr>'
+    exec 'inoremap <silent>' map '<c-\><c-o>:call tskeleton#GoToNextTag()<cr>'
 endf
+if !empty(g:tskelMapGoToNextTag)
+    call TSkeletonMapGoToNextTag()
+endif
 
 
 " In the current buffer, map a:key so that
@@ -106,29 +139,38 @@ if !empty(g:tskelMapHyperComplete)
 endif
 
 
+" Fill in a file template.
 command! -nargs=* -complete=custom,tskeleton#SelectTemplate TSkeletonSetup 
             \ call tskeleton#Setup(<f-args>)
 
 
+" Edit a file template.
 command! -nargs=? -complete=custom,tskeleton#SelectTemplate TSkeletonEdit 
             \ call tskeleton#Edit(<q-args>)
 
 
+" Edit a bit.
 command! -nargs=? -complete=customlist,tskeleton#EditBitCompletion TSkeletonEditBit 
             \ call tskeleton#EditBit(<q-args>)
 
 
+" Create a new file template.
 command! -nargs=* -complete=custom,tskeleton#SelectTemplate TSkeletonNewFile 
             \ call tskeleton#NewFile(<f-args>)
 
 
+" Reset a buffer's bits. Use this command if the list of bits known in a 
+" buffer is outdated.
 command! -bar -nargs=? TSkeletonBitReset call tskeleton#ResetBits(<q-args>)
 
 
+" Insert a bit/snippet.
 command! -nargs=? -complete=custom,tskeleton#SelectBit TSkeletonBit
             \ call tskeleton#Bit(<q-args>)
 
 
+" :nodoc:
+" Remove lines containing placeholders from a bibtex entry.
 command! TSkeletonCleanUpBibEntry call tskeleton#CleanUpBibEntry()
 
 if !empty(g:tskelMapLeader)
@@ -197,7 +239,6 @@ augroup tSkeleton
     endif
 
     exec 'autocmd BufNewFile,BufRead '. escape(g:tskelDir, ' ') .'* if g:tskeleton_SetFiletype | set ft=tskeleton | endif'
-    exec 'autocmd BufWritePost '. escape(g:tskelBitsDir, ' ') .'* exec "TSkeletonBitReset ".expand("<afile>:p:h:t")'
     autocmd FileType * call tskeleton#PrepareBits(&filetype)
     autocmd SessionLoadPost,BufEnter * if (g:tskelMenuPrefix != '' && g:tskelMenuCache != '' && !tskeleton#IsScratchBuffer()) | call tskeleton#BuildBufferMenu(1) | endif
     
