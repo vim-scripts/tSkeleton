@@ -3,7 +3,7 @@
 " @License:     GPL (see http://www.gnu.org/licenses/gpl.txt)
 " @Created:     21-Sep-2004.
 " @Last Change: 2012-10-25.
-" @Revision:    3952
+" @Revision:    3957
 "
 " GetLatestVimScripts: 1160 1 tskeleton.vim
 " http://www.vim.org/scripts/script.php?script_id=1160
@@ -11,14 +11,14 @@
 if &cp || exists("loaded_tskeleton") "{{{2
     finish
 endif
-if !exists('loaded_tlib') || loaded_tlib < 103
+if !exists('loaded_tlib') || loaded_tlib < 110
     runtime plugin/02tlib.vim
-    if !exists('loaded_tlib') || loaded_tlib < 103
-        echoerr "tSkeleton requires tlib >= 1.03"
+    if !exists('loaded_tlib') || loaded_tlib < 110
+        echoerr "tSkeleton requires tlib >= 1.10"
         finish
     endif
 endif
-let loaded_tskeleton = 500
+let loaded_tskeleton = 501
 
 
 if !exists("g:tskelDir") "{{{2
@@ -140,8 +140,8 @@ endif
 
 
 " Fill in a file template.
-command! -nargs=* -complete=custom,tskeleton#SelectTemplate TSkeletonSetup 
-            \ call tskeleton#Setup(<f-args>)
+command! -bang -nargs=* -complete=custom,tskeleton#SelectTemplate TSkeletonSetup 
+            \ call tskeleton#Setup(<q-args>, !empty("<bang>"))
 
 
 " Edit a file template.
@@ -208,8 +208,7 @@ augroup tSkeleton
                 " TLogVAR pattern
                 let pattern  = tlib#url#Decode(pattern)
                 " TLogVAR pattern
-                " TLogDBG 'autocmd BufNewFile '. escape(pattern, ' ') .' set ft='. escape(filetype, ' ') .' | TSkeletonSetup '. escape(a:template, ' ')
-                exec 'autocmd BufNewFile '. escape(pattern, ' ') .' set ft='. escape(filetype, ' ') .' | TSkeletonSetup '. escape(a:template, ' ')
+                exec 'autocmd BufNewFile' escape(pattern, ' ') 'set ft='. escape(filetype, ' ') '| TSkeletonSetup' a:template
             endif
         endf
 
